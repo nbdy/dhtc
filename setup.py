@@ -24,5 +24,6 @@ setup(
     },
     package_data={
         "dhtc": ["templates/*.html"]
-    }
+    },
+    install_requires=open("requirements.txt").readlines()
 )
