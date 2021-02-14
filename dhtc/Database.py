@@ -5,7 +5,7 @@ from .DBEntry import DBEntry
 
 
 class Database(object):
-    def __init__(self, path="dht.db"):
+    def __init__(self, path="dht"):
         self.db = shelve.open(path)
 
     def has_key(self, key):

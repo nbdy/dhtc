@@ -1,7 +1,6 @@
 from maga import Maga, proper_infohash
 from mala import get_metadata
 from time import time
-
 from loguru import logger as log
 
 from dhtc import Database
