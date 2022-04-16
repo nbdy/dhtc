@@ -2,32 +2,51 @@
 
 {% block body %}
 <div class="container">
-    <form class="form-inline" action="/search" method="post">
-        <div class="form-group">
-            <label for="searchField">query</label>
-            <input name="searchInput" type="text" class="form-control" id="searchField" placeholder="{{ placeholder }}">
+    <form class="row row-cols-auto g-2" action="/search" method="post">
+        <div class="col-2">
+            <select class="form-select" aria-label="Key" name="key">
+                <option value="0" selected>Name</option>
+                <option value="1">Info hash</option>
+                <option value="2">File name</option>
+            </select>
         </div>
-        <button type="submit" class="btn btn-default">search</button>
+
+        <div class="col-2">
+            <select class="form-select col-12" aria-label="MatchType" name="match-type">
+                <option value="0" selected>contains</option>
+                <option value="1">equals</option>
+                <option value="2">starts with</option>
+                <option value="3">ends with</option>
+            </select>
+        </div>
+
+        <div class="col-6">
+            <input type="text" class="form-control col-12" aria-label="Search input" name="search-input">
+        </div>
+
+        <div class="col-2">
+            <button class="btn btn-primary" type="submit">Search!</button>
+        </div>
     </form>
 &nbsp;
     {% if results %}
     <table class="table table-striped table-responsive table-bordered">
         <thead>
-        <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Total size</th>
-            <th>File count</th>
-            <th>First seen</th>
+        <tr class="d-flex">
+            <th class="col-1">#</th>
+            <th class="col-6">Name</th>
+            <th class="col-2">Total size</th>
+            <th class="col-1">File count</th>
+            <th class="col-3">First seen</th>
         </tr>
         </thead>
         {% for item in results %}
-        <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ item.Name }}</td>
-            <td>{{ item.TotalSize }}</td>
-            <td>{{ item.FileCount }}</td>
-            <td>{{ item.DiscoveredOn }}</td>
+        <tr class="d-flex">
+            <td class="col-1">{{ loop.index }}</td>
+            <td class="col-6">{{ item.Name }}</td>
+            <td class="col-2">{{ item.TotalSize }}</td>
+            <td class="col-1">{{ item.FileCount }}</td>
+            <td class="col-3">{{ item.DiscoveredOn }}</td>
         </tr>
         {% endfor %}
     </table>
