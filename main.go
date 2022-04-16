@@ -55,6 +55,7 @@ func document2MetaData(values []*clover.Document) []MetaData {
 
 func matchString(searchType string, x string, y string) bool {
 	rVal := false
+	fmt.Println(searchType, x, y)
 	switch searchType {
 	case "0":
 		rVal = strings.Contains(strings.ToLower(x), strings.ToLower(y))
@@ -74,7 +75,7 @@ func hasMatchingFile(fileList []interface{}, searchType string, searchInput stri
 	rVal := false
 	for _, item := range fileList {
 		for key, value := range item.(map[string]interface{}) {
-			if key == "Path" {
+			if key == "path" {
 				rVal = matchString(searchType, value.(string), searchInput)
 			}
 		}
