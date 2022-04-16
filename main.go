@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/boramalper/magnetico/cmd/magneticod/bittorrent/metadata"
 	"github.com/boramalper/magnetico/cmd/magneticod/dht"
@@ -32,6 +33,7 @@ func getInfoHashCount() int {
 
 type MetaData struct {
 	Name         string
+	InfoHash     string
 	DiscoveredOn string
 	TotalSize    uint64
 	FileCount    uint64
@@ -42,6 +44,7 @@ func document2MetaData(values []*clover.Document) []MetaData {
 	for i, value := range values {
 		rVal[i] = MetaData{
 			value.Get("Name").(string),
+			value.Get("InfoHash").(string),
 			time.Unix(int64(value.Get("DiscoveredOn").(float64)), 0).Format(time.RFC822),
 			uint64(value.Get("TotalSize").(float64)),
 			uint64(len(value.Get("Files").([]interface{}))),
@@ -143,7 +146,7 @@ func getNRandomEntries(N int) []MetaData {
 func insertMetadata(md metadata.Metadata) bool {
 	doc := clover.NewDocument()
 	doc.Set("Name", md.Name)
-	doc.Set("InfoHash", md.InfoHash)
+	doc.Set("InfoHash", hex.EncodeToString(md.InfoHash))
 	doc.Set("Files", md.Files)
 	doc.Set("DiscoveredOn", md.DiscoveredOn)
 	doc.Set("TotalSize", md.TotalSize)
@@ -165,7 +168,7 @@ func crawl() {
 	interruptChan := make(chan os.Signal, 1)
 
 	trawlingManager := dht.NewManager(indexerAddrs, 1, 1000)
-	metadataSink := metadata.NewSink(5*time.Second, 128)
+	metadataSink := metadata.NewSink(5*time.Second, 256)
 
 	for stopped := false; !stopped; {
 		select {
