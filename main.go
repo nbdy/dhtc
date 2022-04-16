@@ -48,10 +48,61 @@ func document2MetaData(values []*clover.Document) []MetaData {
 	return rVal
 }
 
-func findByName(name string) []MetaData {
+func matchString(searchType string, x string, y string) bool {
+	rVal := false
+	switch searchType {
+	case "0":
+		rVal = strings.Contains(strings.ToLower(x), strings.ToLower(y))
+	case "1":
+		rVal = strings.ToLower(x) == strings.ToLower(y)
+	case "2":
+		rVal = strings.HasPrefix(strings.ToLower(x), strings.ToLower(y))
+	case "3":
+		rVal = strings.HasSuffix(strings.ToLower(x), strings.ToLower(y))
+	default:
+		rVal = false
+	}
+	return rVal
+}
+
+func matches(doc *clover.Document, key string, searchType string, searchInput string) bool {
+	dbKey := "Name"
+
+	switch key {
+	case "0":
+		dbKey = "Name"
+	case "1":
+		dbKey = "InfoHash"
+	case "2":
+		dbKey = "Files"
+	}
+
+	rVal := doc.Has(dbKey)
+	if rVal {
+		value := doc.Get(dbKey)
+
+		if key == "2" {
+			arrVal := value.([]interface{})
+			fmt.Println(arrVal)
+			for _, item := range arrVal {
+				for key, value := range item.(map[string]interface{}) {
+					if key == "Path" {
+						rVal = matchString(searchType, value.(string), searchInput)
+					}
+				}
+			}
+		} else {
+			rVal = matchString(searchType, value.(string), searchInput)
+		}
+	}
+	return rVal
+}
+
+func findBy(key string, searchType string, searchInput string) []MetaData {
 	values, _ := db.Query("torrents").MatchPredicate(func(doc *clover.Document) bool {
-		return strings.Contains(strings.ToLower(doc.Get("Name").(string)), strings.ToLower(name))
+		return matches(doc, key, searchType, searchInput)
 	}).FindAll()
+	fmt.Println("Found", len(values), "results")
 	return document2MetaData(values)
 }
 
@@ -104,19 +155,19 @@ func crawl() {
 var dashboardTpl, _ = gonja.FromFile("templates/dashboard.html")
 
 func dashboard(c echo.Context) error {
-	out, _ := dashboardTpl.Execute(gonja.Context{"info_hash_count": getInfoHashCount()})
+	out, _ := dashboardTpl.Execute(gonja.Context{"info_hash_count": getInfoHashCount(), "path": c.Path()})
 	return c.HTML(http.StatusOK, out)
 }
 
 var searchTpl, _ = gonja.FromFile("templates/search.html")
 
 func searchGet(c echo.Context) error {
-	out, _ := searchTpl.Execute(gonja.Context{})
+	out, _ := searchTpl.Execute(gonja.Context{"path": c.Path()})
 	return c.HTML(http.StatusOK, out)
 }
 
 func searchPost(c echo.Context) error {
-	out, _ := searchTpl.Execute(gonja.Context{"results": findByName(c.FormValue("searchInput"))})
+	out, _ := searchTpl.Execute(gonja.Context{"results": findBy(c.FormValue("key"), c.FormValue("match-type"), c.FormValue("search-input")), "path": c.Path()})
 	return c.HTML(http.StatusOK, out)
 }
 
