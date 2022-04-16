@@ -65,6 +65,28 @@ func matchString(searchType string, x string, y string) bool {
 	return rVal
 }
 
+func hasMatchingFile(fileList []interface{}, searchType string, searchInput string) bool {
+	rVal := false
+	for _, item := range fileList {
+		for key, value := range item.(map[string]interface{}) {
+			if key == "Path" {
+				rVal = matchString(searchType, value.(string), searchInput)
+			}
+		}
+	}
+	return rVal
+}
+
+func foundOnDate(date time.Time, searchInput string) bool {
+	parsedInput, err := time.Parse("2006.01.02", searchInput)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	endDate := parsedInput.AddDate(0, 0, 1)
+	return date.After(parsedInput) && date.Before(endDate)
+}
+
 func matches(doc *clover.Document, key string, searchType string, searchInput string) bool {
 	dbKey := "Name"
 
@@ -75,6 +97,8 @@ func matches(doc *clover.Document, key string, searchType string, searchInput st
 		dbKey = "InfoHash"
 	case "2":
 		dbKey = "Files"
+	case "3":
+		dbKey = "DiscoveredOn"
 	}
 
 	rVal := doc.Has(dbKey)
@@ -82,15 +106,9 @@ func matches(doc *clover.Document, key string, searchType string, searchInput st
 		value := doc.Get(dbKey)
 
 		if key == "2" {
-			arrVal := value.([]interface{})
-			fmt.Println(arrVal)
-			for _, item := range arrVal {
-				for key, value := range item.(map[string]interface{}) {
-					if key == "Path" {
-						rVal = matchString(searchType, value.(string), searchInput)
-					}
-				}
-			}
+			rVal = hasMatchingFile(value.([]interface{}), searchType, searchInput)
+		} else if key == "3" {
+			rVal = foundOnDate(time.Unix(int64(value.(float64)), 0), searchInput)
 		} else {
 			rVal = matchString(searchType, value.(string), searchInput)
 		}
