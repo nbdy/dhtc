@@ -7,8 +7,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/noirbizarre/gonja"
 	"github.com/ostafen/clover"
+	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -124,6 +126,20 @@ func findBy(key string, searchType string, searchInput string) []MetaData {
 	return document2MetaData(values)
 }
 
+func getNRandomEntries(N int) []MetaData {
+	rand.Seed(time.Now().Unix())
+	count, _ := db.Query("torrents").Count()
+	if count < N {
+		N = count
+	}
+	all, _ := db.Query("torrents").FindAll()
+	rVal := make([]*clover.Document, N)
+	for i := 0; i < N; i++ {
+		rVal[i] = all[rand.Intn(N)]
+	}
+	return document2MetaData(rVal)
+}
+
 func insertMetadata(md metadata.Metadata) bool {
 	doc := clover.NewDocument()
 	doc.Set("Name", md.Name)
@@ -189,12 +205,30 @@ func searchPost(c echo.Context) error {
 	return c.HTML(http.StatusOK, out)
 }
 
+var discoverTpl, _ = gonja.FromFile("templates/discover.html")
+
+func discoverGet(c echo.Context) error {
+	out, _ := discoverTpl.Execute(gonja.Context{"results": getNRandomEntries(50), "path": c.Path()})
+	return c.HTML(http.StatusOK, out)
+}
+
+func discoverPost(c echo.Context) error {
+	N, err := strconv.Atoi(c.FormValue("limit"))
+	if err != nil {
+		N = 50
+	}
+	out, _ := discoverTpl.Execute(gonja.Context{"results": getNRandomEntries(N), "path": c.Path()})
+	return c.HTML(http.StatusOK, out)
+}
+
 func webserver() {
 	srv := echo.New()
 	srv.GET("", dashboard)
 	srv.GET("dashboard", dashboard)
 	srv.GET("search", searchGet)
 	srv.POST("search", searchPost)
+	srv.GET("discover", discoverGet)
+	srv.POST("discover", discoverPost)
 
 	err := srv.Start(":4200")
 	if err != nil {
