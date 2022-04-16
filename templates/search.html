@@ -1,0 +1,36 @@
+{% extends "templates/base.html" %}
+
+{% block body %}
+<div class="container">
+    <form class="form-inline" action="/search" method="post">
+        <div class="form-group">
+            <label for="searchField">query</label>
+            <input name="searchInput" type="text" class="form-control" id="searchField" placeholder="{{ placeholder }}">
+        </div>
+        <button type="submit" class="btn btn-default">search</button>
+    </form>
+&nbsp;
+    {% if results %}
+    <table class="table table-striped table-responsive table-bordered">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Total size</th>
+            <th>File count</th>
+            <th>First seen</th>
+        </tr>
+        </thead>
+        {% for item in results %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ item.Name }}</td>
+            <td>{{ item.TotalSize }}</td>
+            <td>{{ item.FileCount }}</td>
+            <td>{{ item.DiscoveredOn }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+{% endblock %}
