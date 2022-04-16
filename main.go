@@ -224,11 +224,13 @@ func discoverPost(c echo.Context) error {
 func webserver() {
 	srv := echo.New()
 	srv.GET("", dashboard)
-	srv.GET("dashboard", dashboard)
-	srv.GET("search", searchGet)
-	srv.POST("search", searchPost)
-	srv.GET("discover", discoverGet)
-	srv.POST("discover", discoverPost)
+	srv.GET("/dashboard", dashboard)
+	srv.GET("/search", searchGet)
+	srv.POST("/search", searchPost)
+	srv.GET("/discover", discoverGet)
+	srv.POST("/discover", discoverPost)
+	srv.StaticFS("/css", os.DirFS("static/css"))
+	srv.StaticFS("/js", os.DirFS("static/js"))
 
 	err := srv.Start(":4200")
 	if err != nil {
