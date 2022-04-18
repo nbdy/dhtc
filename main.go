@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/hex"
 	"fmt"
 	"github.com/boramalper/magnetico/cmd/magneticod/bittorrent/metadata"
@@ -15,6 +16,12 @@ import (
 	"strings"
 	"time"
 )
+
+//go:embed templates
+var templates embed.FS
+
+//go:embed static
+var static embed.FS
 
 var db, _ = clover.Open("dhtdb")
 
@@ -190,14 +197,16 @@ func crawl() {
 	}
 }
 
-var dashboardTpl, _ = gonja.FromFile("templates/dashboard.html")
+var dashboardTplBytes, _ = templates.ReadFile("templates/dashboard.html")
+var dashboardTpl = gonja.Must(gonja.FromBytes(dashboardTplBytes))
 
 func dashboard(c echo.Context) error {
 	out, _ := dashboardTpl.Execute(gonja.Context{"info_hash_count": getInfoHashCount(), "path": c.Path()})
 	return c.HTML(http.StatusOK, out)
 }
 
-var searchTpl, _ = gonja.FromFile("templates/search.html")
+var searchTplBytes, _ = templates.ReadFile("templates/search.html")
+var searchTpl = gonja.Must(gonja.FromBytes(searchTplBytes))
 
 func searchGet(c echo.Context) error {
 	out, _ := searchTpl.Execute(gonja.Context{"path": c.Path()})
@@ -209,7 +218,8 @@ func searchPost(c echo.Context) error {
 	return c.HTML(http.StatusOK, out)
 }
 
-var discoverTpl, _ = gonja.FromFile("templates/discover.html")
+var discoverTplBytes, _ = templates.ReadFile("templates/discover.html")
+var discoverTpl = gonja.Must(gonja.FromBytes(discoverTplBytes))
 
 func discoverGet(c echo.Context) error {
 	out, _ := discoverTpl.Execute(gonja.Context{"results": getNRandomEntries(50), "path": c.Path()})
@@ -227,14 +237,15 @@ func discoverPost(c echo.Context) error {
 
 func webserver() {
 	srv := echo.New()
+
 	srv.GET("", dashboard)
 	srv.GET("/dashboard", dashboard)
 	srv.GET("/search", searchGet)
 	srv.POST("/search", searchPost)
 	srv.GET("/discover", discoverGet)
 	srv.POST("/discover", discoverPost)
-	srv.StaticFS("/css", os.DirFS("static/css"))
-	srv.StaticFS("/js", os.DirFS("static/js"))
+	srv.StaticFS("/css", echo.MustSubFS(static, "static/css"))
+	srv.StaticFS("/js", echo.MustSubFS(static, "static/js"))
 
 	err := srv.Start(":4200")
 	if err != nil {
