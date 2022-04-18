@@ -9,5 +9,5 @@ go run main.go
 ```
 ### ..run containerized
 ```shell
-
+./run.sh
 ```
