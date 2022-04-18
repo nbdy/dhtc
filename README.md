@@ -1,5 +1,13 @@
-# dhtgo
+# dhtc
 
-web ui will run on 127.0.0.1:4200
+dht crawler with a web ui<br>
 
-still wip
+## how to..
+### ..run locally
+```shell
+go run main.go
+```
+### ..run containerized
+```shell
+
+```

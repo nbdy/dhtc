@@ -1,14 +1,15 @@
-module dhtgo
+module dhtc
 
 go 1.18
 
 require (
-	github.com/anacrolix/torrent v1.14.0
 	github.com/boramalper/magnetico v0.12.0
+	github.com/labstack/echo/v4 v4.7.2
 )
 
 require (
 	github.com/anacrolix/missinggo v1.2.1 // indirect
+	github.com/anacrolix/torrent v1.14.0 // indirect
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -17,7 +18,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
-	github.com/golang/protobuf v1.3.1 // indirect
+	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/goph/emperror v0.17.1 // indirect
@@ -60,7 +61,6 @@ require (
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.2 // indirect
-	github.com/labstack/echo/v4 v4.7.2
 	github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61
 	github.com/ostafen/clover v1.0.1
 )
