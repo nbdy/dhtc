@@ -146,7 +146,7 @@ func getNRandomEntries(N int) []MetaData {
 	all, _ := db.Query("torrents").FindAll()
 	rVal := make([]*clover.Document, N)
 	for i := 0; i < N; i++ {
-		rVal[i] = all[rand.Intn(N)]
+		rVal[i] = all[rand.Intn(count)]
 	}
 	return document2MetaData(rVal)
 }
@@ -254,6 +254,12 @@ func webserver() {
 }
 
 func main() {
+	defer func(db *clover.DB) {
+		err := db.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(db)
 	go crawl()
 	webserver()
 }

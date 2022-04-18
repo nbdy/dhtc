@@ -16,6 +16,8 @@ dht crawler with a web ui<br>
 - [ ] Statistics
   - [ ] Line charts for day, week, month, year
   - [ ] Pie / Bubble charts for categories
+- [ ] Expandable list items with extra info
+  - [ ] Movie/Book/Music metadata lookup
 
 ## how to..
 ### ..run locally
