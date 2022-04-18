@@ -25,7 +25,7 @@ var static embed.FS
 
 var db, _ = clover.Open("dhtdb")
 
-func hasInfoHash(InfoHash [20]byte) bool {
+func hasInfoHash(InfoHash string) bool {
 	values, err := db.Query("torrents").Where(clover.Field("InfoHash").Eq(InfoHash)).FindAll()
 	if err != nil {
 		return false
@@ -181,7 +181,8 @@ func crawl() {
 	for stopped := false; !stopped; {
 		select {
 		case result := <-trawlingManager.Output():
-			if !hasInfoHash(result.InfoHash()) {
+			hash := result.InfoHash()
+			if !hasInfoHash(hex.EncodeToString(hash[:])) {
 				metadataSink.Sink(result)
 			}
 
