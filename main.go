@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/noirbizarre/gonja"
 	"github.com/ostafen/clover"
-	tele "gopkg.in/telebot.v3"
+	telegram "gopkg.in/telebot.v3"
 	"math/rand"
 	"net/http"
 	"os"
@@ -36,6 +36,8 @@ type Configuration struct {
 
 	telegramToken    string
 	telegramUsername string
+
+	safeMode bool
 }
 
 type WatchEntry struct {
@@ -53,7 +55,7 @@ var static embed.FS
 
 var db *clover.DB
 var config = Configuration{}
-var bot *tele.Bot = nil
+var bot *telegram.Bot = nil
 
 func notifyTelegram(message string) {
 	if bot != nil {
@@ -105,16 +107,20 @@ func getInfoHashCount() int {
 	return len(vals)
 }
 
-func document2MetaData(values []*clover.Document) []MetaData {
+func document2MetaData(value *clover.Document) MetaData {
+	return MetaData{
+		value.Get("Name").(string),
+		value.Get("InfoHash").(string),
+		time.Unix(int64(value.Get("DiscoveredOn").(float64)), 0).Format(time.RFC822),
+		uint64(value.Get("TotalSize").(float64)),
+		value.Get("Files").([]interface{}),
+	}
+}
+
+func documents2MetaData(values []*clover.Document) []MetaData {
 	rVal := make([]MetaData, len(values))
 	for i, value := range values {
-		rVal[i] = MetaData{
-			value.Get("Name").(string),
-			value.Get("InfoHash").(string),
-			time.Unix(int64(value.Get("DiscoveredOn").(float64)), 0).Format(time.RFC822),
-			uint64(value.Get("TotalSize").(float64)),
-			value.Get("Files").([]interface{}),
-		}
+		rVal[i] = document2MetaData(value)
 	}
 	return rVal
 }
@@ -178,7 +184,7 @@ func findBy(key string, searchType string, searchInput string) []MetaData {
 	values, _ := db.Query("torrents").MatchPredicate(func(doc *clover.Document) bool {
 		return matches(doc, key, searchType, searchInput)
 	}).FindAll()
-	return document2MetaData(values)
+	return documents2MetaData(values)
 }
 
 func getNRandomEntries(N int) []MetaData {
@@ -192,7 +198,7 @@ func getNRandomEntries(N int) []MetaData {
 	for i := 0; i < N; i++ {
 		rVal[i] = all[rand.Intn(count)]
 	}
-	return document2MetaData(rVal)
+	return documents2MetaData(rVal)
 }
 
 func getWatchEntries() []WatchEntry {
@@ -364,6 +370,8 @@ func parseArguments() {
 	flag.StringVar(&config.telegramToken, "telegramToken", "", "bot token for notifications")
 	flag.StringVar(&config.telegramUsername, "telegramUsername", "", "username to send notifications to")
 
+	flag.BoolVar(&config.safeMode, "safeMode", false, "start with safe mode enabled")
+
 	flag.Parse()
 }
 
@@ -387,13 +395,13 @@ func openDatabase() {
 
 func setupTelegramBot() {
 	if config.telegramToken != "" {
-		pref := tele.Settings{
+		pref := telegram.Settings{
 			Token:  config.telegramToken,
-			Poller: &tele.LongPoller{Timeout: 10 * time.Second},
+			Poller: &telegram.LongPoller{Timeout: 10 * time.Second},
 		}
 
 		var err error
-		bot, err = tele.NewBot(pref)
+		bot, err = telegram.NewBot(pref)
 		if err != nil {
 			fmt.Println("Could not create telegram bot.")
 		}

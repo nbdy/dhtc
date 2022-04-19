@@ -17,15 +17,14 @@ dht crawler with a web ui<br>
 - [X] Notify on title found
   - [X] Telegram
   - [ ] Mail
+- [ ] Expandable list items with extra info
+  - [ ] List of files
+  - [ ] Movie/Book/Music metadata lookup
+- [ ] Safe mode
 - [ ] Statistics
   - [ ] Line charts for day, week, month, year
   - [ ] Pie / Bubble charts for categories
   - [ ] Pie / Bubble charts for file types
-- [ ] Safe search
-- [ ] Expandable list items with extra info
-  - [ ] List of files 
-  - [ ] Movie/Book/Music metadata lookup
-- [ ] Detail page for info hash
 
 
 ## how to..
