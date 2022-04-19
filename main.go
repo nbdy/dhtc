@@ -38,6 +38,8 @@ type Configuration struct {
 	telegramUsername string
 
 	safeMode bool
+
+	crawlerThreads int
 }
 
 type WatchEntry struct {
@@ -368,6 +370,7 @@ func parseArguments() {
 	flag.StringVar(&config.telegramUsername, "telegramUsername", "", "username to send notifications to")
 
 	flag.BoolVar(&config.safeMode, "safeMode", false, "start with safe mode enabled")
+	flag.IntVar(&config.crawlerThreads, "crawlerThreads", 5, "dht crawler threads")
 
 	flag.Parse()
 }
@@ -410,6 +413,9 @@ func main() {
 	openDatabase()
 	setupTelegramBot()
 
-	go crawl()
+	for i := 0; i < config.crawlerThreads; i++ {
+		go crawl()
+	}
+
 	webserver()
 }
