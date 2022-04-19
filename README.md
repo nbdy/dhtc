@@ -1,6 +1,6 @@
 # dhtc
 
-dht crawler with a web ui<br>
+dht crawler with a web ui
 
 ## requirements
 [golang 1.18](https://go.dev/dl/)
