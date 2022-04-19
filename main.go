@@ -95,10 +95,7 @@ func checkWatches(md metadata.Metadata) {
 }
 
 func hasInfoHash(InfoHash string) bool {
-	values, err := db.Query("torrents").Where(clover.Field("InfoHash").Eq(InfoHash)).FindAll()
-	if err != nil {
-		return false
-	}
+	values, _ := db.Query("torrents").Where(clover.Field("InfoHash").Eq(InfoHash)).FindAll()
 	return len(values) > 0
 }
 
