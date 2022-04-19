@@ -2,6 +2,13 @@
 
 dht crawler with a web ui<br>
 
+## requirements
+[golang 1.18](https://go.dev/dl/)
+or
+[docker](https://docs.docker.com/get-docker/)
+
+## features
+
 - [X] Counter of found torrents
 - [X] Search by
   - [X] Name
