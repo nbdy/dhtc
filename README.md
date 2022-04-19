@@ -45,3 +45,17 @@ go run main.go
 ```
 
 either way an instance should be running on [localhost:4200](http://127.0.0.1:4200).
+
+## screenshots
+
+### dashboard
+
+![dashboard](https://i.ibb.co/0rJfG1g/image.png)
+
+### search
+
+![search](https://i.ibb.co/PwWbyK6/image.png)
+
+### watches
+
+![watches](https://i.ibb.co/MfRxvPH/image.png)
