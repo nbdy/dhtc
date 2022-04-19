@@ -13,9 +13,14 @@ dht crawler with a web ui<br>
   - [X] equals
   - [X] starts with
   - [X] ends with
+- [X] Interface to add filters for notifications
+- [X] Notify on title found
+  - [X] Telegram
+  - [ ] Mail
 - [ ] Statistics
   - [ ] Line charts for day, week, month, year
   - [ ] Pie / Bubble charts for categories
+  - [ ] Pie / Bubble charts for file types
 - [ ] Safe search
 - [ ] Expandable list items with extra info
   - [ ] List of files 
