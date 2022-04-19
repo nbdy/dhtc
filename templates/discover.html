@@ -21,7 +21,7 @@
             <td class="col-1">{{ loop.index }}</td>
             <td class="col-6">{{ item.Name }}</td>
             <td class="col-1">{{ item.TotalSize }}</td>
-            <td class="col-1">{{ item.FileCount }}</td>
+            <td class="col-1">{{ item.Files | length }}</td>
             <td class="col-2">{{ item.DiscoveredOn }}</td>
             <td class="col-1"><a href="magnet:?xt=urn:btih:{{ item.InfoHash }}&amp;dn={{ item.Name }}" type="button" class="btn btn-outline-info">Open</a></td>
         </tr>

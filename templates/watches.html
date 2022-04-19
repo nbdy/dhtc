@@ -2,7 +2,16 @@
 
 {% block body %}
 <div class="container">
-    <form class="row row-cols-auto g-2" action="/search" method="post">
+
+    {% if op %}
+        {% if opOk %}<div class="alert alert-success" role="alert">Watch {% if op == "add" %}added{% else %}deleted{% endif %} successfully.</div>
+        {% else %}<div class="alert alert-danger" role="alert">Could not {% if op == "add" %}add{% else %}delete{% endif %} watch!</div>
+        {% endif %}
+    {% endif %}
+
+    <form class="row row-cols-auto g-2" action="/watches" method="post">
+        <input type="hidden" name="op" value="add">
+
         <div class="col-2">
             <select class="form-select" aria-label="Key" name="key">
                 <option value="Name" selected>Name</option>
@@ -26,30 +35,35 @@
         </div>
 
         <div class="col-2">
-            <button class="btn btn-primary" type="submit">Search!</button>
+            <button class="btn btn-primary" type="submit">Add</button>
         </div>
     </form>
-&nbsp;
+
+    &nbsp;
     {% if results %}
     <table class="table table-striped table-responsive table-bordered">
         <thead>
         <tr class="d-flex">
             <th class="col-1">#</th>
-            <th class="col-6">Name</th>
-            <th class="col-1">Total size</th>
-            <th class="col-1">File count</th>
-            <th class="col-2">First seen</th>
-            <th class="col-1">Open uri</th>
+            <th class="col-2">Key</th>
+            <th class="col-2">Match type</th>
+            <th class="col-6">Content</th>
+            <th class="col-1"></th>
         </tr>
         </thead>
         {% for item in results %}
         <tr class="d-flex">
             <td class="col-1">{{ loop.index }}</td>
-            <td class="col-6">{{ item.Name }}</td>
-            <td class="col-1">{{ item.TotalSize }}</td>
-            <td class="col-1">{{ item.Files | length }}</td>
-            <td class="col-2">{{ item.DiscoveredOn }}</td>
-            <td class="col-1"><a href="magnet:?xt=urn:btih:{{ item.InfoHash }}&amp;dn={{ item.Name }}" type="button" class="btn btn-outline-info">Open</a></td>
+            <td class="col-2">{{ item.Key }}</td>
+            <td class="col-2" id="match-type-{{ loop.index }}">{{ item.MatchType }}</td>
+            <td class="col-6" id="content-{{ loop.index }}">{{ item.Content }}</td>
+            <td class="col-1">
+                <form id="{{ loop.index }}-delete" action="/watches" method="post">
+                    <input type="hidden" name="op" value="delete">
+                    <input type="hidden" name="id" value="{{ item.Id }}">
+                    <button class="btn btn-outline-danger" type="submit">Delete</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </table>
