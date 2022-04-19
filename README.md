@@ -36,3 +36,5 @@ go run main.go
 ```shell
 ./run.sh
 ```
+
+either way an instance should be running on [localhost:4200](http://127.0.0.1:4200).
