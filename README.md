@@ -59,3 +59,7 @@ either way an instance should be running on [localhost:4200](http://127.0.0.1:42
 ### watches
 
 ![watches](https://i.ibb.co/MfRxvPH/image.png)
+
+### blacklist
+
+![blacklist](https://i.ibb.co/CbwXP5Z/image.png)
