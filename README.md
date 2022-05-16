@@ -27,7 +27,7 @@ or
 - [ ] Expandable list items with extra info
   - [ ] List of files
   - [ ] Movie/Book/Music metadata lookup
-- [ ] Safe mode
+- [X] Regex based blacklist
 - [ ] Statistics
   - [ ] Line charts for day, week, month, year
   - [ ] Pie / Bubble charts for categories
