@@ -88,7 +88,7 @@
             <td class="col-1">
                 <form id="{{ loop.index }}-delete" action="/blacklist" method="post">
                     <input type="hidden" name="op" value="delete">
-                    <input type="hidden" name="id" value="{{ item.Id }}">
+                    <input type="hidden" name="Id" value="{{ item.Id }}">
                     <button class="btn btn-outline-danger" type="submit">Delete</button>
                 </form>
             </td>
