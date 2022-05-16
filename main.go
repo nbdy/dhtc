@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"embed"
 	"encoding/hex"
 	"flag"
@@ -14,6 +15,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -40,6 +42,10 @@ type Configuration struct {
 	safeMode bool
 
 	crawlerThreads int
+
+	enableBlacklist bool
+	nameBlacklist   string
+	fileBlacklist   string
 }
 
 type WatchEntry struct {
@@ -48,6 +54,16 @@ type WatchEntry struct {
 	MatchType string
 	Content   string
 }
+
+type BlacklistEntry struct {
+	Id     string
+	Filter string
+	Type   string
+}
+
+const watchTable = "watches"
+const blacklistTable = "blacklist"
+const torrentTable = "torrents"
 
 //go:embed templates
 var templates embed.FS
@@ -79,7 +95,7 @@ func checkWatches(md metadata.Metadata) {
 		return
 	}
 
-	all, _ := db.Query("watches").FindAll()
+	all, _ := db.Query(watchTable).FindAll()
 	for _, document := range all {
 		key := document.Get("Key").(string)
 		matchType := document.Get("MatchType").(string)
@@ -97,12 +113,12 @@ func checkWatches(md metadata.Metadata) {
 }
 
 func hasInfoHash(InfoHash string) bool {
-	values, _ := db.Query("torrents").Where(clover.Field("InfoHash").Eq(InfoHash)).FindAll()
+	values, _ := db.Query(torrentTable).Where(clover.Field("InfoHash").Eq(InfoHash)).FindAll()
 	return len(values) > 0
 }
 
 func getInfoHashCount() int {
-	vals, _ := db.Query("torrents").FindAll()
+	vals, _ := db.Query(torrentTable).FindAll()
 	return len(vals)
 }
 
@@ -180,7 +196,7 @@ func matches(doc *clover.Document, key string, searchType string, searchInput st
 }
 
 func findBy(key string, searchType string, searchInput string) []MetaData {
-	values, _ := db.Query("torrents").MatchPredicate(func(doc *clover.Document) bool {
+	values, _ := db.Query(torrentTable).MatchPredicate(func(doc *clover.Document) bool {
 		return matches(doc, key, searchType, searchInput)
 	}).FindAll()
 	return documents2MetaData(values)
@@ -188,11 +204,11 @@ func findBy(key string, searchType string, searchInput string) []MetaData {
 
 func getNRandomEntries(N int) []MetaData {
 	rand.Seed(time.Now().Unix())
-	count, _ := db.Query("torrents").Count()
+	count, _ := db.Query(torrentTable).Count()
 	if count < N {
 		N = count
 	}
-	all, _ := db.Query("torrents").FindAll()
+	all, _ := db.Query(torrentTable).FindAll()
 	rVal := make([]*clover.Document, N)
 	for i := 0; i < N; i++ {
 		rVal[i] = all[rand.Intn(count)]
@@ -201,7 +217,7 @@ func getNRandomEntries(N int) []MetaData {
 }
 
 func getWatchEntries() []WatchEntry {
-	all, _ := db.Query("watches").FindAll()
+	all, _ := db.Query(watchTable).FindAll()
 	rVal := make([]WatchEntry, len(all))
 	for i, value := range all {
 		rVal[i] = WatchEntry{
@@ -214,14 +230,100 @@ func getWatchEntries() []WatchEntry {
 	return rVal
 }
 
+func isInBlacklist(filter string, entryType string) bool {
+	result, _ := db.Query(blacklistTable).Where(clover.Field("Filter").Eq(filter).And(clover.Field("Type").Eq(entryType))).FindAll()
+	return len(result) > 0
+}
+
+func addToBlacklist(filter string, entryType string) bool {
+	rVal := false
+	if !isInBlacklist(filter, entryType) {
+		fmt.Printf("Is not in blacklist yet: %s\n", filter)
+		doc := clover.NewDocument()
+		doc.Set("Type", entryType)
+		doc.Set("Filter", filter)
+		_, err := db.InsertOne(blacklistTable, doc)
+		rVal = err == nil
+		if !rVal {
+			fmt.Println(err)
+		}
+	}
+	return rVal
+}
+
+func isFileBlacklisted(md metadata.Metadata, filter *regexp.Regexp) bool {
+	rVal := false
+	for i := 0; i < len(md.Files); i++ {
+		rVal = filter.MatchString(md.Files[i].Path)
+		if rVal {
+			break
+		}
+	}
+	return rVal
+}
+
+func isBlacklisted(md metadata.Metadata) bool {
+	all, _ := db.Query(blacklistTable).MatchPredicate(func(doc *clover.Document) bool {
+		filterStr := doc.Get("Filter").(string)
+		filter := regexp.MustCompile(filterStr)
+
+		switch doc.Get("Type").(string) {
+		case "0":
+			return filter.MatchString(md.Name)
+		case "1":
+			return isFileBlacklisted(md, filter)
+		}
+
+		return false
+	}).FindAll()
+	return len(all) > 0
+}
+
+func removeBlacklistItem(filter string, entryType string) bool {
+	rVal := false
+	if isInBlacklist(filter, entryType) {
+		err := db.Query(blacklistTable).Where(clover.Field("Filter").Eq(filter).And(clover.Field("Type").Eq(entryType))).Delete()
+		rVal = err != nil
+	}
+	return rVal
+}
+
+func getBlacklistTypeFromStrInt(entryType string) string {
+	switch entryType {
+	case "0":
+		return "Name"
+	case "1":
+		return "File name"
+	}
+	return "Unknown"
+}
+
+func getBlacklistEntries() []BlacklistEntry {
+	all, _ := db.Query(blacklistTable).FindAll()
+	rVal := make([]BlacklistEntry, len(all))
+	for i, value := range all {
+		rVal[i] = BlacklistEntry{
+			value.ObjectId(),
+			value.Get("Filter").(string),
+			getBlacklistTypeFromStrInt(value.Get("Type").(string)),
+		}
+	}
+	return rVal
+}
+
 func insertMetadata(md metadata.Metadata) bool {
+	if config.enableBlacklist && isBlacklisted(md) {
+		fmt.Printf("Blacklisted: %s\n", md.Name)
+		return false
+	}
+
 	doc := clover.NewDocument()
 	doc.Set("Name", md.Name)
 	doc.Set("InfoHash", hex.EncodeToString(md.InfoHash))
 	doc.Set("Files", md.Files)
 	doc.Set("DiscoveredOn", md.DiscoveredOn)
 	doc.Set("TotalSize", md.TotalSize)
-	_, err := db.InsertOne("torrents", doc)
+	_, err := db.InsertOne(torrentTable, doc)
 	if err != nil {
 		return false
 	} else {
@@ -234,7 +336,7 @@ func insertWatchEntry(key string, searchType string, searchInput string) bool {
 	doc.Set("Key", key)
 	doc.Set("MatchType", searchType)
 	doc.Set("Content", searchInput)
-	_, err := db.InsertOne("watches", doc)
+	_, err := db.InsertOne(watchTable, doc)
 	if err != nil {
 		fmt.Println(err)
 		return false
@@ -244,7 +346,7 @@ func insertWatchEntry(key string, searchType string, searchInput string) bool {
 }
 
 func deleteWatchEntry(entryId string) bool {
-	err := db.Query("watches").DeleteById(entryId)
+	err := db.Query(watchTable).DeleteById(entryId)
 	if err != nil {
 		return false
 	}
@@ -328,13 +430,38 @@ func watchGet(c echo.Context) error {
 func watchPost(c echo.Context) error {
 	opOk := false
 	op := c.FormValue("op")
-	fmt.Println("Operation:", op)
 	if op == "add" {
 		opOk = insertWatchEntry(c.FormValue("key"), c.FormValue("match-type"), c.FormValue("search-input"))
 	} else if op == "delete" {
 		opOk = deleteWatchEntry(c.FormValue("id"))
 	}
 	out, _ := watchTpl.Execute(gonja.Context{"path": c.Path(), "op": op, "opOk": opOk, "results": getWatchEntries()})
+	return c.HTML(http.StatusOK, out)
+}
+
+var blacklistTplBytes, _ = templates.ReadFile("templates/blacklist.html")
+var blacklistTpl = gonja.Must(gonja.FromBytes(blacklistTplBytes))
+
+func blacklistGet(c echo.Context) error {
+	out, _ := blacklistTpl.Execute(gonja.Context{"path": c.Path(), "results": getBlacklistEntries()})
+	return c.HTML(http.StatusOK, out)
+}
+
+func blacklistPost(c echo.Context) error {
+	opOk := false
+	op := c.FormValue("op")
+	if op == "add" {
+		opOk = addToBlacklist(c.FormValue("Filter"), c.FormValue("Type"))
+	} else if op == "delete" {
+		opOk = removeBlacklistItem(c.FormValue("Filter"), c.FormValue("Type"))
+	} else if op == "enable" {
+		config.enableBlacklist = true
+		opOk = true
+	} else if op == "disable" {
+		config.enableBlacklist = false
+		opOk = true
+	}
+	out, _ := blacklistTpl.Execute(gonja.Context{"path": c.Path(), "op": op, "opOk": opOk, "results": getBlacklistEntries()})
 	return c.HTML(http.StatusOK, out)
 }
 
@@ -349,6 +476,8 @@ func webserver() {
 	srv.POST("/discover", discoverPost)
 	srv.GET("/watches", watchGet)
 	srv.POST("/watches", watchPost)
+	srv.GET("/blacklist", blacklistGet)
+	srv.POST("/blacklist", blacklistPost)
 
 	srv.StaticFS("/css", echo.MustSubFS(static, "static/css"))
 	srv.StaticFS("/js", echo.MustSubFS(static, "static/js"))
@@ -372,6 +501,10 @@ func parseArguments() {
 	flag.BoolVar(&config.safeMode, "safeMode", false, "start with safe mode enabled")
 	flag.IntVar(&config.crawlerThreads, "crawlerThreads", 5, "dht crawler threads")
 
+	flag.BoolVar(&config.enableBlacklist, "enableBlacklist", false, "enable blacklists")
+	flag.StringVar(&config.nameBlacklist, "nameBlacklist", "", "blacklist for torrent names")
+	flag.StringVar(&config.fileBlacklist, "fileBlacklist", "", "blacklist for file names")
+
 	flag.Parse()
 }
 
@@ -382,15 +515,9 @@ func openDatabase() {
 		fmt.Println("Error:", err)
 	}
 
-	err = db.CreateCollection("torrents")
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-
-	err = db.CreateCollection("watches")
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
+	_ = db.CreateCollection(torrentTable)
+	_ = db.CreateCollection(watchTable)
+	_ = db.CreateCollection(blacklistTable)
 }
 
 func setupTelegramBot() {
@@ -408,9 +535,28 @@ func setupTelegramBot() {
 	}
 }
 
+func readBlacklist(entryType string, filePath string) {
+	fp, err := os.Open(filePath)
+	if err == nil {
+		scanner := bufio.NewScanner(fp)
+		for scanner.Scan() {
+			addToBlacklist(scanner.Text(), entryType)
+		}
+	}
+	_ = fp.Close()
+}
+
 func main() {
 	parseArguments()
 	openDatabase()
+
+	if config.nameBlacklist != "" {
+		readBlacklist("0", config.nameBlacklist)
+	}
+	if config.fileBlacklist != "" {
+		readBlacklist("1", config.fileBlacklist)
+	}
+
 	setupTelegramBot()
 
 	for i := 0; i < config.crawlerThreads; i++ {

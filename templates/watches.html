@@ -4,10 +4,13 @@
 <div class="container">
 
     {% if op %}
+    &nbsp;
         {% if opOk %}<div class="alert alert-success" role="alert">Watch {% if op == "add" %}added{% else %}deleted{% endif %} successfully.</div>
         {% else %}<div class="alert alert-danger" role="alert">Could not {% if op == "add" %}add{% else %}delete{% endif %} watch!</div>
         {% endif %}
     {% endif %}
+
+    &nbsp;
 
     <form class="row row-cols-auto g-2" action="/watches" method="post">
         <input type="hidden" name="op" value="add">
