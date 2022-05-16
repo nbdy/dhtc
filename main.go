@@ -279,13 +279,9 @@ func isBlacklisted(md metadata.Metadata) bool {
 	return len(all) > 0
 }
 
-func removeBlacklistItem(filter string, entryType string) bool {
-	rVal := false
-	if isInBlacklist(filter, entryType) {
-		err := db.Query(blacklistTable).Where(clover.Field("Filter").Eq(filter).And(clover.Field("Type").Eq(entryType))).Delete()
-		rVal = err != nil
-	}
-	return rVal
+func deleteBlacklistItem(itemId string) bool {
+	fmt.Println("Removing", itemId)
+	return db.Query(blacklistTable).DeleteById(itemId) == nil
 }
 
 func getBlacklistTypeFromStrInt(entryType string) string {
@@ -453,7 +449,7 @@ func blacklistPost(c echo.Context) error {
 	if op == "add" {
 		opOk = addToBlacklist(c.FormValue("Filter"), c.FormValue("Type"))
 	} else if op == "delete" {
-		opOk = removeBlacklistItem(c.FormValue("Filter"), c.FormValue("Type"))
+		opOk = deleteBlacklistItem(c.FormValue("Id"))
 	} else if op == "enable" {
 		config.enableBlacklist = true
 		opOk = true
