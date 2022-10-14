@@ -2,6 +2,8 @@
 
 dht crawler with a web ui
 
+check out [dhtc-server](https://github.com/nbdy/dhtc-server) and [dhtc-client](https://github.com/nbdy/dhtc-client) if you want more flexibility
+
 ## requirements
 [golang 1.18](https://go.dev/dl/)
 or
