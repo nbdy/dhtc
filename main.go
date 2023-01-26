@@ -9,6 +9,7 @@ import (
 	"github.com/boramalper/magnetico/cmd/magneticod/bittorrent/metadata"
 	"github.com/boramalper/magnetico/cmd/magneticod/dht"
 	"github.com/labstack/echo/v4"
+	"github.com/sevenNt/echo-pprof"
 	"github.com/noirbizarre/gonja"
 	"github.com/ostafen/clover"
 	telegram "gopkg.in/telebot.v3"
@@ -477,6 +478,8 @@ func webserver() {
 
 	srv.StaticFS("/css", echo.MustSubFS(static, "static/css"))
 	srv.StaticFS("/js", echo.MustSubFS(static, "static/js"))
+
+	echopprof.Wrap(srv)
 
 	err := srv.Start(config.address)
 
