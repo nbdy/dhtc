@@ -63,5 +63,6 @@ require (
 	github.com/deckarep/golang-set/v2 v2.1.0
 	github.com/noirbizarre/gonja v0.0.0-20200629003239-4d051fd0be61
 	github.com/ostafen/clover v1.0.1
+	github.com/sevenNt/echo-pprof v0.1.1-0.20220928101820-e6cd9598abd3
 	gopkg.in/telebot.v3 v3.0.0
 )
