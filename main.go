@@ -9,6 +9,7 @@ import (
 	"github.com/boramalper/magnetico/cmd/magneticod/bittorrent/metadata"
 	"github.com/boramalper/magnetico/cmd/magneticod/dht"
 	"github.com/labstack/echo/v4"
+	"github.com/sevenNt/echo-pprof"
 	"github.com/noirbizarre/gonja"
 	"github.com/ostafen/clover"
 	telegram "gopkg.in/telebot.v3"
@@ -19,7 +20,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	mapset "github.com/deckarep/golang-set/v2"
 )
+
+var infohashcache mapset.Set[[20]byte]
 
 type MetaData struct {
 	Name         string
@@ -110,11 +114,6 @@ func checkWatches(md metadata.Metadata) {
 			notifyTelegram(msg)
 		}
 	}
-}
-
-func hasInfoHash(InfoHash string) bool {
-	values, _ := db.Query(torrentTable).Where(clover.Field("InfoHash").Eq(InfoHash)).FindAll()
-	return len(values) > 0
 }
 
 func getInfoHashCount() int {
@@ -360,7 +359,9 @@ func crawl() {
 		select {
 		case result := <-trawlingManager.Output():
 			hash := result.InfoHash()
-			if !hasInfoHash(hex.EncodeToString(hash[:])) {
+
+			if (!infohashcache.Contains(hash)) {
+				infohashcache.Add(hash)
 				metadataSink.Sink(result)
 			}
 
@@ -478,7 +479,10 @@ func webserver() {
 	srv.StaticFS("/css", echo.MustSubFS(static, "static/css"))
 	srv.StaticFS("/js", echo.MustSubFS(static, "static/js"))
 
+	echopprof.Wrap(srv)
+
 	err := srv.Start(config.address)
+
 	if err != nil {
 		return
 	}
@@ -506,6 +510,7 @@ func parseArguments() {
 
 func openDatabase() {
 	var err error
+	var h []byte
 	db, err = clover.Open(config.dbName)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -514,6 +519,19 @@ func openDatabase() {
 	_ = db.CreateCollection(torrentTable)
 	_ = db.CreateCollection(watchTable)
 	_ = db.CreateCollection(blacklistTable)
+
+	all, _ := db.Query(torrentTable).FindAll()
+	for _, document := range all {
+		ih := document.Get("InfoHash").(string)
+		h, err = hex.DecodeString(ih)
+		if len(h) != 20 || err != nil {
+			fmt.Print("x")
+			continue
+		}
+		h20 := (*[20]byte)(h)
+		infohashcache.Add(*h20);
+	}
+	fmt.Printf("info hash cache size %d elements\n", infohashcache.Cardinality())
 }
 
 func setupTelegramBot() {
@@ -543,6 +561,8 @@ func readBlacklist(entryType string, filePath string) {
 }
 
 func main() {
+	infohashcache = mapset.NewSet[[20]byte]()
+
 	parseArguments()
 	openDatabase()
 
