@@ -8,10 +8,11 @@ import (
 	"fmt"
 	"github.com/boramalper/magnetico/cmd/magneticod/bittorrent/metadata"
 	"github.com/boramalper/magnetico/cmd/magneticod/dht"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/labstack/echo/v4"
-	"github.com/sevenNt/echo-pprof"
 	"github.com/noirbizarre/gonja"
 	"github.com/ostafen/clover"
+	"github.com/sevenNt/echo-pprof"
 	telegram "gopkg.in/telebot.v3"
 	"math/rand"
 	"net/http"
@@ -20,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	mapset "github.com/deckarep/golang-set/v2"
 )
 
 var infohashcache mapset.Set[[20]byte]
@@ -360,7 +360,7 @@ func crawl() {
 		case result := <-trawlingManager.Output():
 			hash := result.InfoHash()
 
-			if (!infohashcache.Contains(hash)) {
+			if !infohashcache.Contains(hash) {
 				infohashcache.Add(hash)
 				metadataSink.Sink(result)
 			}
@@ -529,7 +529,7 @@ func openDatabase() {
 			continue
 		}
 		h20 := (*[20]byte)(h)
-		infohashcache.Add(*h20);
+		infohashcache.Add(*h20)
 	}
 	fmt.Printf("info hash cache size %d elements\n", infohashcache.Cardinality())
 }
