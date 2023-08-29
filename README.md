@@ -22,6 +22,7 @@ or
   - [X] equals
   - [X] starts with
   - [X] ends with
+- [X] Sortable tables
 - [X] Interface to add filters for notifications
 - [X] Notify on title found
   - [X] Telegram
