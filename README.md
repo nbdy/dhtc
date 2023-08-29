@@ -1,6 +1,7 @@
 # dhtc
 
-dht crawler with a web ui
+dht crawler with a web ui<br>
+build your own torrent search engine!
 
 check out [dhtc-server](https://github.com/nbdy/dhtc-server) and [dhtc-client](https://github.com/nbdy/dhtc-client) if you want more flexibility
 
