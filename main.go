@@ -10,7 +10,7 @@ import (
 	"github.com/boramalper/magnetico/cmd/magneticod/dht"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/labstack/echo/v4"
-	"github.com/noirbizarre/gonja"
+	"github.com/nikolalohinski/gonja"
 	"github.com/ostafen/clover"
 	"github.com/sevenNt/echo-pprof"
 	telegram "gopkg.in/telebot.v3"
@@ -125,8 +125,8 @@ func document2MetaData(value *clover.Document) MetaData {
 	return MetaData{
 		value.Get("Name").(string),
 		value.Get("InfoHash").(string),
-		time.Unix(int64(value.Get("DiscoveredOn").(float64)), 0).Format(time.RFC822),
-		uint64(value.Get("TotalSize").(float64)),
+		time.Unix(value.Get("DiscoveredOn").(int64), 0).Format(time.RFC822),
+		value.Get("TotalSize").(uint64),
 		value.Get("Files").([]interface{}),
 	}
 }
@@ -378,6 +378,10 @@ func crawl() {
 	}
 }
 
+// -------------------------------
+// Web-UI
+// -------------------------------
+// Dashboard
 var dashboardTplBytes, _ = templates.ReadFile("templates/dashboard.html")
 var dashboardTpl = gonja.Must(gonja.FromBytes(dashboardTplBytes))
 
@@ -386,6 +390,8 @@ func dashboard(c echo.Context) error {
 	return c.HTML(http.StatusOK, out)
 }
 
+// -------------------------------
+// Search
 var searchTplBytes, _ = templates.ReadFile("templates/search.html")
 var searchTpl = gonja.Must(gonja.FromBytes(searchTplBytes))
 
@@ -399,6 +405,8 @@ func searchPost(c echo.Context) error {
 	return c.HTML(http.StatusOK, out)
 }
 
+// -------------------------------
+// Discover
 var discoverTplBytes, _ = templates.ReadFile("templates/discover.html")
 var discoverTpl = gonja.Must(gonja.FromBytes(discoverTplBytes))
 
@@ -416,6 +424,8 @@ func discoverPost(c echo.Context) error {
 	return c.HTML(http.StatusOK, out)
 }
 
+// -------------------------------
+// Watch
 var watchTplBytes, _ = templates.ReadFile("templates/watches.html")
 var watchTpl = gonja.Must(gonja.FromBytes(watchTplBytes))
 
@@ -436,6 +446,8 @@ func watchPost(c echo.Context) error {
 	return c.HTML(http.StatusOK, out)
 }
 
+// -------------------------------
+// Blacklist
 var blacklistTplBytes, _ = templates.ReadFile("templates/blacklist.html")
 var blacklistTpl = gonja.Must(gonja.FromBytes(blacklistTplBytes))
 
