@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>dhtc</title>
     <link href="/css/bootstrap.css" rel="stylesheet">
-    <script src="/js/bootstrap.js"></script>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% include "templates/navbar.html" with context %}
     {% block body %}{% endblock %}
 </body>
+<script src="/js/bootstrap.js"></script>
+{% block extra_js %}{% endblock %}
 </html>
