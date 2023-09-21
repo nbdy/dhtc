@@ -11,8 +11,9 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/nikolalohinski/gonja"
-	"github.com/ostafen/clover"
-	"github.com/sevenNt/echo-pprof"
+	"github.com/ostafen/clover/v2"
+	"github.com/ostafen/clover/v2/document"
+	"github.com/ostafen/clover/v2/query"
 	telegram "gopkg.in/telebot.v3"
 	"math/rand"
 	"net/http"
@@ -50,6 +51,8 @@ type Configuration struct {
 	enableBlacklist bool
 	nameBlacklist   string
 	fileBlacklist   string
+
+	statistics bool
 }
 
 type WatchEntry struct {
@@ -99,11 +102,11 @@ func checkWatches(md metadata.Metadata) {
 		return
 	}
 
-	all, _ := db.Query(watchTable).FindAll()
-	for _, document := range all {
-		key := document.Get("Key").(string)
-		matchType := document.Get("MatchType").(string)
-		content := document.Get("").(string)
+	all, _ := db.FindAll(query.NewQuery(watchTable))
+	for _, d := range all {
+		key := d.Get("Key").(string)
+		matchType := d.Get("MatchType").(string)
+		content := d.Get("").(string)
 		if len(findBy(key, matchType, content)) > 0 {
 			msg := ""
 			if matchType == "Files" {
@@ -117,11 +120,11 @@ func checkWatches(md metadata.Metadata) {
 }
 
 func getInfoHashCount() int {
-	vals, _ := db.Query(torrentTable).FindAll()
+	vals, _ := db.FindAll(query.NewQuery(torrentTable))
 	return len(vals)
 }
 
-func document2MetaData(value *clover.Document) MetaData {
+func document2MetaData(value *document.Document) MetaData {
 	return MetaData{
 		value.Get("Name").(string),
 		value.Get("InfoHash").(string),
@@ -131,7 +134,7 @@ func document2MetaData(value *clover.Document) MetaData {
 	}
 }
 
-func documents2MetaData(values []*clover.Document) []MetaData {
+func documents2MetaData(values []*document.Document) []MetaData {
 	rVal := make([]MetaData, len(values))
 	for i, value := range values {
 		rVal[i] = document2MetaData(value)
@@ -178,7 +181,7 @@ func foundOnDate(date time.Time, searchInput string) bool {
 	return date.After(parsedInput) && date.Before(endDate)
 }
 
-func matches(doc *clover.Document, key string, searchType string, searchInput string) bool {
+func matches(doc *document.Document, key string, searchType string, searchInput string) bool {
 	rVal := doc.Has(key)
 	if rVal {
 		value := doc.Get(key)
@@ -195,20 +198,20 @@ func matches(doc *clover.Document, key string, searchType string, searchInput st
 }
 
 func findBy(key string, searchType string, searchInput string) []MetaData {
-	values, _ := db.Query(torrentTable).MatchPredicate(func(doc *clover.Document) bool {
+	values, _ := db.FindAll(query.NewQuery(torrentTable).MatchFunc(func(doc *document.Document) bool {
 		return matches(doc, key, searchType, searchInput)
-	}).FindAll()
+	}))
 	return documents2MetaData(values)
 }
 
 func getNRandomEntries(N int) []MetaData {
-	rand.Seed(time.Now().Unix())
-	count, _ := db.Query(torrentTable).Count()
+	count, _ := db.Count(query.NewQuery(torrentTable))
 	if count < N {
 		N = count
 	}
-	all, _ := db.Query(torrentTable).FindAll()
-	rVal := make([]*clover.Document, N)
+
+	all, _ := db.FindAll(query.NewQuery(torrentTable))
+	rVal := make([]*document.Document, N)
 	for i := 0; i < N; i++ {
 		rVal[i] = all[rand.Intn(count)]
 	}
@@ -216,7 +219,7 @@ func getNRandomEntries(N int) []MetaData {
 }
 
 func getWatchEntries() []WatchEntry {
-	all, _ := db.Query(watchTable).FindAll()
+	all, _ := db.FindAll(query.NewQuery(watchTable))
 	rVal := make([]WatchEntry, len(all))
 	for i, value := range all {
 		rVal[i] = WatchEntry{
@@ -230,7 +233,7 @@ func getWatchEntries() []WatchEntry {
 }
 
 func isInBlacklist(filter string, entryType string) bool {
-	result, _ := db.Query(blacklistTable).Where(clover.Field("Filter").Eq(filter).And(clover.Field("Type").Eq(entryType))).FindAll()
+	result, _ := db.FindAll(query.NewQuery(blacklistTable).Where(query.Field("Filter").Eq(filter).And(query.Field("Type").Eq(entryType))))
 	return len(result) > 0
 }
 
@@ -238,7 +241,7 @@ func addToBlacklist(filter string, entryType string) bool {
 	rVal := false
 	if !isInBlacklist(filter, entryType) {
 		fmt.Printf("Is not in blacklist yet: %s\n", filter)
-		doc := clover.NewDocument()
+		doc := document.NewDocument()
 		doc.Set("Type", entryType)
 		doc.Set("Filter", filter)
 		_, err := db.InsertOne(blacklistTable, doc)
@@ -262,7 +265,7 @@ func isFileBlacklisted(md metadata.Metadata, filter *regexp.Regexp) bool {
 }
 
 func isBlacklisted(md metadata.Metadata) bool {
-	all, _ := db.Query(blacklistTable).MatchPredicate(func(doc *clover.Document) bool {
+	all, _ := db.FindAll(query.NewQuery(blacklistTable).MatchFunc(func(doc *document.Document) bool {
 		filterStr := doc.Get("Filter").(string)
 		filter := regexp.MustCompile(filterStr)
 
@@ -274,13 +277,13 @@ func isBlacklisted(md metadata.Metadata) bool {
 		}
 
 		return false
-	}).FindAll()
+	}))
 	return len(all) > 0
 }
 
 func deleteBlacklistItem(itemId string) bool {
 	fmt.Println("Removing", itemId)
-	return db.Query(blacklistTable).DeleteById(itemId) == nil
+	return db.DeleteById(blacklistTable, itemId) == nil
 }
 
 func getBlacklistTypeFromStrInt(entryType string) string {
@@ -294,7 +297,7 @@ func getBlacklistTypeFromStrInt(entryType string) string {
 }
 
 func getBlacklistEntries() []BlacklistEntry {
-	all, _ := db.Query(blacklistTable).FindAll()
+	all, _ := db.FindAll(query.NewQuery(blacklistTable))
 	rVal := make([]BlacklistEntry, len(all))
 	for i, value := range all {
 		rVal[i] = BlacklistEntry{
@@ -312,7 +315,7 @@ func insertMetadata(md metadata.Metadata) bool {
 		return false
 	}
 
-	doc := clover.NewDocument()
+	doc := document.NewDocument()
 	doc.Set("Name", md.Name)
 	doc.Set("InfoHash", hex.EncodeToString(md.InfoHash))
 	doc.Set("Files", md.Files)
@@ -327,7 +330,7 @@ func insertMetadata(md metadata.Metadata) bool {
 }
 
 func insertWatchEntry(key string, searchType string, searchInput string) bool {
-	doc := clover.NewDocument()
+	doc := document.NewDocument()
 	doc.Set("Key", key)
 	doc.Set("MatchType", searchType)
 	doc.Set("Content", searchInput)
@@ -341,11 +344,7 @@ func insertWatchEntry(key string, searchType string, searchInput string) bool {
 }
 
 func deleteWatchEntry(entryId string) bool {
-	err := db.Query(watchTable).DeleteById(entryId)
-	if err != nil {
-		return false
-	}
-	return true
+	return db.DeleteById(watchTable, entryId) == nil
 }
 
 func crawl() {
@@ -386,7 +385,7 @@ var dashboardTplBytes, _ = templates.ReadFile("templates/dashboard.html")
 var dashboardTpl = gonja.Must(gonja.FromBytes(dashboardTplBytes))
 
 func dashboard(c echo.Context) error {
-	out, _ := dashboardTpl.Execute(gonja.Context{"info_hash_count": getInfoHashCount(), "path": c.Path()})
+	out, _ := dashboardTpl.Execute(gonja.Context{"info_hash_count": getInfoHashCount(), "path": c.Path(), "statistics": config.statistics})
 	return c.HTML(http.StatusOK, out)
 }
 
@@ -491,8 +490,6 @@ func webserver() {
 	srv.StaticFS("/css", echo.MustSubFS(static, "static/css"))
 	srv.StaticFS("/js", echo.MustSubFS(static, "static/js"))
 
-	echopprof.Wrap(srv)
-
 	err := srv.Start(config.address)
 
 	if err != nil {
@@ -517,6 +514,8 @@ func parseArguments() {
 	flag.StringVar(&config.nameBlacklist, "nameBlacklist", "", "blacklist for torrent names")
 	flag.StringVar(&config.fileBlacklist, "fileBlacklist", "", "blacklist for file names")
 
+	flag.BoolVar(&config.statistics, "statistics", false, "enable statistics (dashboard)")
+
 	flag.Parse()
 }
 
@@ -532,9 +531,9 @@ func openDatabase() {
 	_ = db.CreateCollection(watchTable)
 	_ = db.CreateCollection(blacklistTable)
 
-	all, _ := db.Query(torrentTable).FindAll()
-	for _, document := range all {
-		ih := document.Get("InfoHash").(string)
+	all, _ := db.FindAll(query.NewQuery(torrentTable))
+	for _, d := range all {
+		ih := d.Get("InfoHash").(string)
 		h, err = hex.DecodeString(ih)
 		if len(h) != 20 || err != nil {
 			fmt.Print("x")
