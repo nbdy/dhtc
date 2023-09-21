@@ -2,11 +2,11 @@ package main
 
 import (
 	"bufio"
+	dhtc_client "dhtc/dhtc-client"
 	"embed"
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/boramalper/magnetico/cmd/magneticod/bittorrent/metadata"
 	"github.com/boramalper/magnetico/cmd/magneticod/dht"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/labstack/echo/v4"
@@ -14,6 +14,8 @@ import (
 	"github.com/ostafen/clover/v2"
 	"github.com/ostafen/clover/v2/document"
 	"github.com/ostafen/clover/v2/query"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	telegram "gopkg.in/telebot.v3"
 	"math/rand"
 	"net/http"
@@ -97,7 +99,7 @@ func notifyTelegram(message string) {
 	}
 }
 
-func checkWatches(md metadata.Metadata) {
+func checkWatches(md dhtc_client.Metadata) {
 	if bot == nil {
 		return
 	}
@@ -253,7 +255,7 @@ func addToBlacklist(filter string, entryType string) bool {
 	return rVal
 }
 
-func isFileBlacklisted(md metadata.Metadata, filter *regexp.Regexp) bool {
+func isFileBlacklisted(md dhtc_client.Metadata, filter *regexp.Regexp) bool {
 	rVal := false
 	for i := 0; i < len(md.Files); i++ {
 		rVal = filter.MatchString(md.Files[i].Path)
@@ -264,7 +266,7 @@ func isFileBlacklisted(md metadata.Metadata, filter *regexp.Regexp) bool {
 	return rVal
 }
 
-func isBlacklisted(md metadata.Metadata) bool {
+func isBlacklisted(md dhtc_client.Metadata) bool {
 	all, _ := db.FindAll(query.NewQuery(blacklistTable).MatchFunc(func(doc *document.Document) bool {
 		filterStr := doc.Get("Filter").(string)
 		filter := regexp.MustCompile(filterStr)
@@ -309,7 +311,7 @@ func getBlacklistEntries() []BlacklistEntry {
 	return rVal
 }
 
-func insertMetadata(md metadata.Metadata) bool {
+func insertMetadata(md dhtc_client.Metadata) bool {
 	if config.enableBlacklist && isBlacklisted(md) {
 		fmt.Printf("Blacklisted: %s\n", md.Name)
 		return false
@@ -352,7 +354,7 @@ func crawl() {
 	interruptChan := make(chan os.Signal, 1)
 
 	trawlingManager := dht.NewManager(indexerAddrs, 1, config.maxNeighbors)
-	metadataSink := metadata.NewSink(config.drainTimeout, config.maxLeeches)
+	metadataSink := dhtc_client.NewSink(config.drainTimeout, config.maxLeeches)
 
 	for stopped := false; !stopped; {
 		select {
@@ -572,6 +574,8 @@ func readBlacklist(entryType string, filePath string) {
 }
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	infohashcache = mapset.NewSet[[20]byte]()
 
 	parseArguments()
