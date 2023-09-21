@@ -2,14 +2,14 @@ package main
 
 import (
 	"bufio"
-	dhtc_client "dhtc/dhtc-client"
+	dhtcclient "dhtc/dhtc-client"
 	"embed"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"github.com/boramalper/magnetico/cmd/magneticod/dht"
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 	"github.com/nikolalohinski/gonja"
 	"github.com/ostafen/clover/v2"
 	"github.com/ostafen/clover/v2/document"
@@ -99,7 +99,7 @@ func notifyTelegram(message string) {
 	}
 }
 
-func checkWatches(md dhtc_client.Metadata) {
+func checkWatches(md dhtcclient.Metadata) {
 	if bot == nil {
 		return
 	}
@@ -255,7 +255,7 @@ func addToBlacklist(filter string, entryType string) bool {
 	return rVal
 }
 
-func isFileBlacklisted(md dhtc_client.Metadata, filter *regexp.Regexp) bool {
+func isFileBlacklisted(md dhtcclient.Metadata, filter *regexp.Regexp) bool {
 	rVal := false
 	for i := 0; i < len(md.Files); i++ {
 		rVal = filter.MatchString(md.Files[i].Path)
@@ -266,7 +266,7 @@ func isFileBlacklisted(md dhtc_client.Metadata, filter *regexp.Regexp) bool {
 	return rVal
 }
 
-func isBlacklisted(md dhtc_client.Metadata) bool {
+func isBlacklisted(md dhtcclient.Metadata) bool {
 	all, _ := db.FindAll(query.NewQuery(blacklistTable).MatchFunc(func(doc *document.Document) bool {
 		filterStr := doc.Get("Filter").(string)
 		filter := regexp.MustCompile(filterStr)
@@ -311,7 +311,7 @@ func getBlacklistEntries() []BlacklistEntry {
 	return rVal
 }
 
-func insertMetadata(md dhtc_client.Metadata) bool {
+func insertMetadata(md dhtcclient.Metadata) bool {
 	if config.enableBlacklist && isBlacklisted(md) {
 		fmt.Printf("Blacklisted: %s\n", md.Name)
 		return false
@@ -354,7 +354,7 @@ func crawl() {
 	interruptChan := make(chan os.Signal, 1)
 
 	trawlingManager := dht.NewManager(indexerAddrs, 1, config.maxNeighbors)
-	metadataSink := dhtc_client.NewSink(config.drainTimeout, config.maxLeeches)
+	metadataSink := dhtcclient.NewSink(config.drainTimeout, config.maxLeeches)
 
 	for stopped := false; !stopped; {
 		select {
@@ -386,9 +386,9 @@ func crawl() {
 var dashboardTplBytes, _ = templates.ReadFile("templates/dashboard.html")
 var dashboardTpl = gonja.Must(gonja.FromBytes(dashboardTplBytes))
 
-func dashboard(c echo.Context) error {
-	out, _ := dashboardTpl.Execute(gonja.Context{"info_hash_count": getInfoHashCount(), "path": c.Path(), "statistics": config.statistics})
-	return c.HTML(http.StatusOK, out)
+func dashboard(c *gin.Context) {
+	out, _ := dashboardTpl.Execute(gonja.Context{"info_hash_count": getInfoHashCount(), "path": c.FullPath(), "statistics": config.statistics})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
 // -------------------------------
@@ -396,14 +396,17 @@ func dashboard(c echo.Context) error {
 var searchTplBytes, _ = templates.ReadFile("templates/search.html")
 var searchTpl = gonja.Must(gonja.FromBytes(searchTplBytes))
 
-func searchGet(c echo.Context) error {
-	out, _ := searchTpl.Execute(gonja.Context{"path": c.Path()})
-	return c.HTML(http.StatusOK, out)
+func searchGet(c *gin.Context) {
+	out, _ := searchTpl.Execute(gonja.Context{"path": c.FullPath()})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
-func searchPost(c echo.Context) error {
-	out, _ := searchTpl.Execute(gonja.Context{"results": findBy(c.FormValue("key"), c.FormValue("match-type"), c.FormValue("search-input")), "path": c.Path()})
-	return c.HTML(http.StatusOK, out)
+func searchPost(c *gin.Context) {
+	out, _ := searchTpl.Execute(gonja.Context{
+		"results": findBy(c.PostForm("key"), c.PostForm("match-type"), c.PostForm("search-input")),
+		"path":    c.FullPath(),
+	})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
 // -------------------------------
@@ -411,18 +414,24 @@ func searchPost(c echo.Context) error {
 var discoverTplBytes, _ = templates.ReadFile("templates/discover.html")
 var discoverTpl = gonja.Must(gonja.FromBytes(discoverTplBytes))
 
-func discoverGet(c echo.Context) error {
-	out, _ := discoverTpl.Execute(gonja.Context{"results": getNRandomEntries(50), "path": c.Path()})
-	return c.HTML(http.StatusOK, out)
+func discoverGet(c *gin.Context) {
+	out, _ := discoverTpl.Execute(gonja.Context{
+		"results": getNRandomEntries(50),
+		"path":    c.FullPath(),
+	})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
-func discoverPost(c echo.Context) error {
-	N, err := strconv.Atoi(c.FormValue("limit"))
+func discoverPost(c *gin.Context) {
+	N, err := strconv.Atoi(c.PostForm("limit"))
 	if err != nil {
 		N = 50
 	}
-	out, _ := discoverTpl.Execute(gonja.Context{"results": getNRandomEntries(N), "path": c.Path()})
-	return c.HTML(http.StatusOK, out)
+	out, _ := discoverTpl.Execute(gonja.Context{
+		"results": getNRandomEntries(N),
+		"path":    c.FullPath(),
+	})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
 // -------------------------------
@@ -430,21 +439,24 @@ func discoverPost(c echo.Context) error {
 var watchTplBytes, _ = templates.ReadFile("templates/watches.html")
 var watchTpl = gonja.Must(gonja.FromBytes(watchTplBytes))
 
-func watchGet(c echo.Context) error {
-	out, _ := watchTpl.Execute(gonja.Context{"path": c.Path(), "results": getWatchEntries()})
-	return c.HTML(http.StatusOK, out)
+func watchGet(c *gin.Context) {
+	out, _ := watchTpl.Execute(gonja.Context{
+		"path":    c.FullPath(),
+		"results": getWatchEntries(),
+	})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
-func watchPost(c echo.Context) error {
+func watchPost(c *gin.Context) {
 	opOk := false
-	op := c.FormValue("op")
+	op := c.PostForm("op")
 	if op == "add" {
-		opOk = insertWatchEntry(c.FormValue("key"), c.FormValue("match-type"), c.FormValue("search-input"))
+		opOk = insertWatchEntry(c.PostForm("key"), c.PostForm("match-type"), c.PostForm("search-input"))
 	} else if op == "delete" {
-		opOk = deleteWatchEntry(c.FormValue("id"))
+		opOk = deleteWatchEntry(c.PostForm("id"))
 	}
-	out, _ := watchTpl.Execute(gonja.Context{"path": c.Path(), "op": op, "opOk": opOk, "results": getWatchEntries()})
-	return c.HTML(http.StatusOK, out)
+	out, _ := watchTpl.Execute(gonja.Context{"path": c.FullPath(), "op": op, "opOk": opOk, "results": getWatchEntries()})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
 // -------------------------------
@@ -452,18 +464,18 @@ func watchPost(c echo.Context) error {
 var blacklistTplBytes, _ = templates.ReadFile("templates/blacklist.html")
 var blacklistTpl = gonja.Must(gonja.FromBytes(blacklistTplBytes))
 
-func blacklistGet(c echo.Context) error {
-	out, _ := blacklistTpl.Execute(gonja.Context{"path": c.Path(), "results": getBlacklistEntries()})
-	return c.HTML(http.StatusOK, out)
+func blacklistGet(c *gin.Context) {
+	out, _ := blacklistTpl.Execute(gonja.Context{"path": c.FullPath(), "results": getBlacklistEntries()})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
-func blacklistPost(c echo.Context) error {
+func blacklistPost(c *gin.Context) {
 	opOk := false
-	op := c.FormValue("op")
+	op := c.PostForm("op")
 	if op == "add" {
-		opOk = addToBlacklist(c.FormValue("Filter"), c.FormValue("Type"))
+		opOk = addToBlacklist(c.PostForm("Filter"), c.PostForm("Type"))
 	} else if op == "delete" {
-		opOk = deleteBlacklistItem(c.FormValue("Id"))
+		opOk = deleteBlacklistItem(c.PostForm("Id"))
 	} else if op == "enable" {
 		config.enableBlacklist = true
 		opOk = true
@@ -471,12 +483,22 @@ func blacklistPost(c echo.Context) error {
 		config.enableBlacklist = false
 		opOk = true
 	}
-	out, _ := blacklistTpl.Execute(gonja.Context{"path": c.Path(), "op": op, "opOk": opOk, "results": getBlacklistEntries()})
-	return c.HTML(http.StatusOK, out)
+	out, _ := blacklistTpl.Execute(gonja.Context{"path": c.FullPath(), "op": op, "opOk": opOk, "results": getBlacklistEntries()})
+	c.Data(http.StatusOK, "text/html", []byte(out))
 }
 
+// -------------------------------
+// API
+// -------------------------------
+// Metrics
+func apiMetrics(c *gin.Context) {
+
+}
+
+// -------------------------------
+
 func webserver() {
-	srv := echo.New()
+	srv := gin.Default()
 
 	srv.GET("", dashboard)
 	srv.GET("/dashboard", dashboard)
@@ -489,10 +511,12 @@ func webserver() {
 	srv.GET("/blacklist", blacklistGet)
 	srv.POST("/blacklist", blacklistPost)
 
-	srv.StaticFS("/css", echo.MustSubFS(static, "static/css"))
-	srv.StaticFS("/js", echo.MustSubFS(static, "static/js"))
+	srv.GET("/api/metrics", apiMetrics)
 
-	err := srv.Start(config.address)
+	srv.Static("/css", "static/css")
+	srv.Static("/js", "static/js")
+
+	err := srv.Run(config.address)
 
 	if err != nil {
 		return
