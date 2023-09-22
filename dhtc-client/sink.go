@@ -1,7 +1,6 @@
 package dhtc_client
 
 import (
-	"github.com/boramalper/magnetico/cmd/magneticod/dht"
 	"github.com/rs/zerolog/log"
 	"net"
 	"time"
@@ -20,7 +19,7 @@ func NewSink(deadline time.Duration, maxNLeeches int) *Sink {
 	return ms
 }
 
-func (ms *Sink) Sink(res dht.Result) {
+func (ms *Sink) Sink(res Result) {
 	if ms.terminated {
 		log.Panic().Msg("Trying to Sink() an already closed Sink!")
 	}
