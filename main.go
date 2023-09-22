@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/boramalper/magnetico/cmd/magneticod/dht"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/nikolalohinski/gonja"
@@ -353,7 +352,7 @@ func crawl() {
 	indexerAddrs := []string{"0.0.0.0:0"}
 	interruptChan := make(chan os.Signal, 1)
 
-	trawlingManager := dht.NewManager(indexerAddrs, 1, config.maxNeighbors)
+	trawlingManager := dhtcclient.NewManager(indexerAddrs, 1, config.maxNeighbors)
 	metadataSink := dhtcclient.NewSink(config.drainTimeout, config.maxLeeches)
 
 	for stopped := false; !stopped; {
@@ -490,8 +489,23 @@ func blacklistPost(c *gin.Context) {
 // -------------------------------
 // API
 // -------------------------------
+
 // Metrics
 func apiMetrics(c *gin.Context) {
+	begin, err := strconv.ParseInt(c.PostForm("begin"), 10, 64)
+	if err != nil {
+		begin = 0
+	}
+	beginTime := time.Unix(begin, 0)
+	end, err := strconv.ParseInt(c.PostForm("end"), 10, 64)
+	if err != nil {
+		end = 0
+	}
+	endTime := time.Unix(end, 0)
+	_, _ = db.Count(query.NewQuery(torrentTable).MatchFunc(func(doc *document.Document) bool {
+		discovered := time.Unix(doc.Get("DiscoveredOn").(int64), 0)
+		return discovered.Before(endTime) && discovered.After(beginTime)
+	}))
 
 }
 
