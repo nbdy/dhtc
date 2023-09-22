@@ -1,5 +1,9 @@
 # dhtc
 
+![Linux](https://github.com/nbdy/dhtc/actions/workflows/linux.yml/badge.svg)
+![Windows](https://github.com/nbdy/dhtc/actions/workflows/windows.yml/badge.svg)
+![OSX](https://github.com/nbdy/dhtc/actions/workflows/osx.yml/badge.svg)
+
 dht crawler with a web ui<br>
 build your own torrent search engine!
 
