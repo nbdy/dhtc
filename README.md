@@ -3,15 +3,16 @@
 dht crawler with a web ui<br>
 build your own torrent search engine!
 
-check out [dhtc-server](https://github.com/nbdy/dhtc-server) and [dhtc-client](https://github.com/nbdy/dhtc-client) if you want more flexibility
-
 ## requirements
-[golang 1.18](https://go.dev/dl/) & linux
-or
+[golang 1.18](https://go.dev/dl/) or
 [docker](https://docs.docker.com/get-docker/)
 
 ## features
 
+- [X] Multiplatform compatibility
+  - [X] Linux
+  - [X] Windows
+  - [X] OSX
 - [X] Counter of found torrents
 - [X] Search by
   - [X] Name
