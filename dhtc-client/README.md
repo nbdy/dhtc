@@ -1,0 +1,1 @@
+This is mainly the [magnetico](https://github.com/boramalper/magnetico)'s client code with changes for multiplatform compatibility and specifying the bootstrap nodes.
