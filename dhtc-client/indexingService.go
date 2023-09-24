@@ -1,8 +1,8 @@
 package dhtc_client
 
 import (
+	"crypto/rand"
 	"github.com/rs/zerolog/log"
-	"math/rand"
 	"net"
 	"sync"
 	"time"
@@ -132,7 +132,7 @@ func (is *IndexingService) findNeighbors() {
 		}
 
 		is.protocol.SendMessage(
-			NewSampleInfohashesQuery(is.nodeID, []byte("aa"), target),
+			NewSampleInfoHashQuery(is.nodeID, []byte("aa"), target),
 			addr,
 		)
 	}
@@ -158,7 +158,7 @@ func (is *IndexingService) onFindNodeResponse(response *Message, addr *net.UDPAd
 			log.Panic().Msg("Could NOT generate random bytes!")
 		}
 		is.protocol.SendMessage(
-			NewSampleInfohashesQuery(is.nodeID, []byte("aa"), target),
+			NewSampleInfoHashQuery(is.nodeID, []byte("aa"), target),
 			&node.Addr,
 		)
 	}

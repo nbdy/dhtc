@@ -55,7 +55,7 @@ type QueryArguments struct {
 	Seed int `bencode:"seed,omitempty"`
 
 	// If 1, then the responding node should try to fill the `values` list with non-seed items on a
-	// best-effort basis."
+	// best-effort basis.
 	// Defined in BEP 33 "DHT Scrapes" for `get_peers` queries.
 	NoSeed int `bencode:"noseed,omitempty"`
 	// If 1, then the responding node should add two fields to the "r" dictionary in the response:
@@ -98,7 +98,7 @@ type Error struct {
 	Message []byte
 }
 
-// Represents peer address in either IPv6 or IPv4 form.
+// CompactPeer Represents peer address in either IPv6 or IPv4 form.
 type CompactPeer struct {
 	IP   net.IP
 	Port int
@@ -181,7 +181,7 @@ func UnmarshalCompactPeers(b []byte) (ret []CompactPeer, err error) {
 	return
 }
 
-// This allows bencode.Unmarshal to do better than a string or []byte.
+// UnmarshalBencode This allows bencode.Unmarshal to do better than a string or []byte.
 func (cnis *CompactNodeInfos) UnmarshalBencode(b []byte) (err error) {
 	var bb []byte
 	err = bencode.Unmarshal(b, &bb)

@@ -1,9 +1,9 @@
 package dhtc_client
 
 import (
+	"crypto/rand"
 	"crypto/sha1"
 	"github.com/rs/zerolog/log"
-	"math/rand"
 	"net"
 	"sync"
 	"time"
@@ -218,11 +218,11 @@ func NewGetPeersQuery(id []byte, infoHash []byte) *Message {
 	}
 }
 
-func NewAnnouncePeerQuery(id []byte, implied_port bool, info_hash []byte, port uint16, token []byte) *Message {
+func NewAnnouncePeerQuery(id []byte, impliedPort bool, infoHash []byte, port uint16, token []byte) *Message {
 	panic("Not implemented yet!")
 }
 
-func NewSampleInfohashesQuery(id []byte, t []byte, target []byte) *Message {
+func NewSampleInfoHashQuery(id []byte, t []byte, target []byte) *Message {
 	return &Message{
 		Y: "q",
 		T: t,

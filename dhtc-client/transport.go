@@ -13,7 +13,7 @@ type Transport struct {
 	buffer  []byte
 
 	// OnMessage is the function that will be called when Transport receives a packet that is
-	// successfully unmarshalled as a syntactically correct Message (but -of course- the checking
+	// successfully unmarshalled as a syntactically correct Message (but, of course, checking
 	// the semantic correctness of the Message is left to Protocol).
 	onMessage func(*Message, *net.UDPAddr)
 	// OnCongestion
@@ -23,7 +23,7 @@ type Transport struct {
 func NewTransport(laddr string, onMessage func(*Message, *net.UDPAddr), onCongestion func()) *Transport {
 	t := new(Transport)
 	/*   The field size sets a theoretical limit of 65,535 bytes (8 byte header + 65,527 bytes of
-	 * data) for a UDP datagram. However the actual limit for the data length, which is imposed by
+	 * data) for a UDP datagram. However, the actual limit for the data length, which is imposed by
 	 * the underlying IPv4 protocol, is 65,507 bytes (65,535 − 8 byte UDP header − 20 byte IP
 	 * header).
 	 *
