@@ -7,7 +7,7 @@ import (
 )
 
 type Service interface {
-	Start()
+	Start(nodes []string)
 	Terminate()
 }
 
@@ -21,7 +21,7 @@ type Manager struct {
 	indexingServices []Service
 }
 
-func NewManager(addrs []string, interval time.Duration, maxNeighbors uint) *Manager {
+func NewManager(nodes []string, addrs []string, interval time.Duration, maxNeighbors uint) *Manager {
 	manager := new(Manager)
 	manager.output = make(chan Result, 20)
 
@@ -30,7 +30,7 @@ func NewManager(addrs []string, interval time.Duration, maxNeighbors uint) *Mana
 			OnResult: manager.onIndexingResult,
 		})
 		manager.indexingServices = append(manager.indexingServices, service)
-		service.Start()
+		service.Start(nodes)
 	}
 
 	return manager
