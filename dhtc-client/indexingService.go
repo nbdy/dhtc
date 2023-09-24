@@ -15,11 +15,7 @@ type IndexingService struct {
 	interval      time.Duration
 	eventHandlers IndexingServiceEventHandlers
 
-	nodeID []byte
-	// []byte type would be a much better fit for the keys but unfortunately (and quite
-	// understandably) slices cannot be used as keys (since they are not hashable), and using arrays
-	// (or even the conversion between each other) is a pain; hence map[string]net.UDPAddr
-	//                                                                  ^~~~~~
+	nodeID            []byte
 	routingTable      map[string]*net.UDPAddr
 	routingTableMutex sync.RWMutex
 	maxNeighbors      uint
@@ -66,32 +62,28 @@ func NewIndexingService(laddr string, interval time.Duration, maxNeighbors uint,
 	return service
 }
 
-func (is *IndexingService) Start() {
+func (is *IndexingService) Start(nodes []string) {
 	if is.started {
 		log.Panic().Msg("Attempting to Start() a mainline/IndexingService that has been already started! (Programmer error.)")
 	}
 	is.started = true
 
 	is.protocol.Start()
-	go is.index()
-
-	log.Info().Msg("Indexing Service started!")
+	go is.index(nodes)
 }
 
 func (is *IndexingService) Terminate() {
 	is.protocol.Terminate()
 }
 
-func (is *IndexingService) index() {
+func (is *IndexingService) index(nodes []string) {
 	for range time.Tick(is.interval) {
 		is.routingTableMutex.RLock()
 		routingTableLen := len(is.routingTable)
 		is.routingTableMutex.RUnlock()
 		if routingTableLen == 0 {
-			is.bootstrap()
+			is.bootstrap(nodes)
 		} else {
-			log.Info().Msgf("Latest status: %i %i", routingTableLen, is.maxNeighbors)
-			//TODO
 			is.findNeighbors()
 			is.routingTableMutex.Lock()
 			is.routingTable = make(map[string]*net.UDPAddr)
@@ -100,15 +92,8 @@ func (is *IndexingService) index() {
 	}
 }
 
-func (is *IndexingService) bootstrap() {
-	bootstrappingNodes := []string{
-		"router.bittorrent.com:6881",
-		"dht.transmissionbt.com:6881",
-		"dht.libtorrent.org:25401",
-	}
-
-	log.Debug().Msg("Bootstrapping as routing table is empty...")
-	for _, node := range bootstrappingNodes {
+func (is *IndexingService) bootstrap(nodes []string) {
+	for _, node := range nodes {
 		target := make([]byte, 20)
 		_, err := rand.Read(target)
 		if err != nil {
