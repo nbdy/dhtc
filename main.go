@@ -75,10 +75,12 @@ func main() {
 	db.AddToBlacklist(database, ReadFileLines(cfg.NameBlacklist), "0")
 	db.AddToBlacklist(database, ReadFileLines(cfg.FileBlacklist), "1")
 
-	bot := notifier.SetupTelegramBot(cfg)
+	if !cfg.OnlyWebServer {
+		bot := notifier.SetupTelegramBot(cfg)
 
-	for i := 0; i < cfg.CrawlerThreads; i++ {
-		go crawl(cfg, database, bot)
+		for i := 0; i < cfg.CrawlerThreads; i++ {
+			go crawl(cfg, database, bot)
+		}
 	}
 
 	ui.RunWebServer(cfg, database)

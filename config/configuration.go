@@ -26,6 +26,8 @@ type Configuration struct {
 	Statistics bool
 
 	BootstrapNodeFile string
+
+	OnlyWebServer bool
 }
 
 func ParseArguments() *Configuration {
@@ -50,6 +52,8 @@ func ParseArguments() *Configuration {
 	flag.BoolVar(&config.Statistics, "Statistics", false, "enable Statistics (dashboard)")
 
 	flag.StringVar(&config.BootstrapNodeFile, "BootstrapNodeFile", "bootstrap-nodes.txt", "bootstrap nodes to use")
+
+	flag.BoolVar(&config.OnlyWebServer, "OnlyWebServer", false, "only start the web-server")
 
 	flag.Parse()
 
