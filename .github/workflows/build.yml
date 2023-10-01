@@ -26,9 +26,3 @@ jobs:
         run: |
           go get .
           go build -v -o dhtc-${{ matrix.os }} dhtc
-
-      - name: Archive production artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-without-markdown
-          path: dhtc-*
