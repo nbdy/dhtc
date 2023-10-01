@@ -8,7 +8,7 @@ dht crawler with a web ui<br>
 build your own torrent search engine!
 
 ## requirements
-[golang 1.18](https://go.dev/dl/) or
+[golang 1.21](https://go.dev/dl/) or
 [docker](https://docs.docker.com/get-docker/)
 
 ## features
