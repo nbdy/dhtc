@@ -25,10 +25,10 @@ jobs:
       - name: Build
         run: |
           go get .
-          go build -v dhtc
+          go build -v -o dhtc-{{ matrix.os }} dhtc
 
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist-without-markdown
-          path: dhtc*
+          path: dhtc-*
