@@ -1,3 +1,4 @@
+{{ define "base" }}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,12 +7,12 @@
     <title>dhtc</title>
     <link href="/css/bootstrap.css" rel="stylesheet">
     <script src="/js/bootstrap.js"></script>
-    {% block extra_css %}{% endblock %}
+    {{ block "extra_css" . }}{{ end }}
 </head>
 <body>
-    {% include "templates/navbar.html" with context %}
-    {% block body %}{% endblock %}
+    {{ block "body" . }}{{ end }}
 </body>
 <script src="/js/bootstrap.js"></script>
-{% block extra_js %}{% endblock %}
+{{ block "extra_js" . }}{{ end }}
 </html>
+{{ end }}

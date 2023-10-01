@@ -1,14 +1,17 @@
-{% extends "templates/base.html" %}
+{{ define "search" }}
+{{ template "navbar" . }}
+{{ template "base" .}}
+{{ end }}
 
-{% block extra_css %}
-<link href="/css/sortable.min.css" rel="stylesheet">
-{% endblock %}
-
-{% block extra_js %}
+{{ define "extra_js" }}
 <script src="/js/sortable.min.js"></script>
-{% endblock %}
+{{ end }}
 
-{% block body %}
+{{ define "extra_css" }}
+<link href="/css/sortable.min.css" rel="stylesheet">
+{{ end }}
+
+{{ define "body" }}
 <div class="container">
     &nbsp;
     <form class="row row-cols-auto g-2" action="/search" method="post">
@@ -40,6 +43,6 @@
     </form>
 &nbsp;
 
-    {% include 'templates/torrent_table.html' %}
+    {{ template "torrent_table" . }}
 </div>
-{% endblock %}
+{{ end }}

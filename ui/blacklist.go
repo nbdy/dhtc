@@ -3,19 +3,15 @@ package ui
 import (
 	"dhtc/db"
 	"github.com/gin-gonic/gin"
-	"github.com/nikolalohinski/gonja"
+	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
-var blacklistTplBytes, _ = templates.ReadFile("ui/templates/blacklist.html")
-var blacklistTpl = gonja.Must(gonja.FromBytes(blacklistTplBytes))
-
 func (c *Controller) BlacklistGet(ctx *gin.Context) {
-	out, _ := blacklistTpl.Execute(gonja.Context{
+	ctx.HTML(http.StatusOK, "blacklist", gin.H{
 		"path":    ctx.FullPath(),
 		"results": db.GetBlacklistEntries(c.Database),
 	})
-	ctx.Data(http.StatusOK, "text/html", []byte(out))
 }
 
 func (c *Controller) BlacklistPost(ctx *gin.Context) {
@@ -32,11 +28,13 @@ func (c *Controller) BlacklistPost(ctx *gin.Context) {
 		c.Configuration.EnableBlacklist = false
 		opOk = true
 	}
-	out, _ := blacklistTpl.Execute(gonja.Context{
+
+	log.Print(opOk)
+
+	ctx.HTML(http.StatusOK, "blacklist", gin.H{
 		"path":    ctx.FullPath(),
 		"op":      op,
 		"opOk":    opOk,
 		"results": db.GetBlacklistEntries(c.Database),
 	})
-	ctx.Data(http.StatusOK, "text/html", []byte(out))
 }

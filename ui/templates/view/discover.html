@@ -1,0 +1,19 @@
+{{ define "discover" }}
+{{ template "navbar" . }}
+{{ template "base" .}}
+{{ end }}
+
+{{define "extra_css"}}
+<link href="/css/sortable.min.css" rel="stylesheet">
+{{end}}
+
+{{define "extra_js"}}
+<script src="/js/sortable.min.js"></script>
+{{end}}
+
+{{ define "body" }}
+<div class="container">
+    &nbsp;
+    {{ template "torrent_table" . }}
+</div>
+{{ end }}

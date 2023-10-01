@@ -1,0 +1,84 @@
+{{ define "blacklist" }}
+{{ template "navbar" . }}
+{{ template "base" .}}
+{{ end }}
+
+{{ define "body" }}
+<div class="container">
+    {{ if .op }}
+    &nbsp;
+    {{ if eq .op "add" }}
+    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
+        {{ if .opOk }}Blacklist entry added successfully.{{ else if not .opOk }}Could not add blacklist entry.{{ end }}
+    </div>
+    {{ else if eq .op "delete" }}
+    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
+        {{ if .opOk }}Blacklist entry deleted successfully.{{ else if not .opOk }}Could not delete blacklist entry.{{ end }}
+    </div>
+    {{ else if eq .op "enable" }}
+    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
+        {{ if .opOk }}Enabled blacklist.{{ else if not .opOk }}Could not enable blacklist.{{ end }}
+    </div>
+    {{ else if eq .op "disable" }}
+    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
+        {{ if .opOk }}Disabled blacklist.{{ else if not .opOk }}Could not disable blacklist.{{ end }}
+    </div>
+    {{ end }}
+    {{ end }}
+    &nbsp;
+
+    <form action="/blacklist" method="post">
+        <div class="row row-cols-auto g-2">
+            <input type="hidden" name="op" value="add">
+
+            <div class="col-8">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Regex:</span>
+                    </div>
+                    <input type="text" class="form-control" name="Filter" required>
+                </div>
+            </div>
+
+            <div class="col-2">
+                <select class="form-select" aria-label="MatchType" name="Type">
+                    <option value="0" selected>Name</option>
+                    <option value="1">File name</option>
+                </select>
+            </div>
+
+            <div class="col-2">
+                <button class="btn btn-primary mb-2" type="submit">Add</button>
+            </div>
+        </div>
+    </form>
+
+    &nbsp;
+    {{ if .results }}
+    <table class="table table-striped table-responsive table-bordered">
+        <thead>
+        <tr class="d-flex">
+            <th class="col-1">#</th>
+            <th class="col-8">Filter</th>
+            <th class="col-2">Type</th>
+            <th class="col-1"></th>
+        </tr>
+        </thead>
+        {{ range $index, $item := .results }}
+        <tr class="d-flex">
+            <td class="col-1">{{ $index }}</td>
+            <td class="col-8">{{ $item.Filter }}</td>
+            <td class="col-2">{{ $item.Type }}</td>
+            <td class="col-1">
+                <form id="{{ $index }}-delete" action="/blacklist" method="post">
+                    <input type="hidden" name="op" value="delete">
+                    <input type="hidden" name="Id" value="{{ $item.Id }}">
+                    <button class="btn btn-outline-danger" type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{ end }}
+    </table>
+    {{ end }}
+</div>
+{{ end }}

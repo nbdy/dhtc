@@ -6,6 +6,7 @@ import (
 	"github.com/ostafen/clover/v2"
 	"github.com/ostafen/clover/v2/document"
 	"github.com/ostafen/clover/v2/query"
+	"github.com/rs/zerolog/log"
 	"regexp"
 )
 
@@ -25,10 +26,9 @@ func AddToBlacklist(db *clover.DB, filters []string, entryType string) bool {
 			doc.Set("Filter", filter)
 			_, err := db.InsertOne(BlacklistTable, doc)
 			if err != nil {
-				fmt.Println(err)
-				rVal = true
-				break
+				log.Error().Err(err)
 			}
+			rVal = err == nil
 		}
 	}
 

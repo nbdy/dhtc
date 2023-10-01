@@ -1,14 +1,17 @@
-{% extends "templates/base.html" %}
+{{ define "watches" }}
+{{ template "navbar" . }}
+{{ template "base" .}}
+{{ end }}
 
-{% block body %}
+{{define "body"}}
 <div class="container">
 
-    {% if op %}
+    {{if .op}}
     &nbsp;
-        {% if opOk %}<div class="alert alert-success" role="alert">Watch {% if op == "add" %}added{% else %}deleted{% endif %} successfully.</div>
-        {% else %}<div class="alert alert-danger" role="alert">Could not {% if op == "add" %}add{% else %}delete{% endif %} watch!</div>
-        {% endif %}
-    {% endif %}
+        {{if .opOk}}<div class="alert alert-success" role="alert">Watch {{if eq .op "add"}}added{{else}}deleted{{end}} successfully.</div>
+        {{else}}<div class="alert alert-danger" role="alert">Could not {{if eq .op "add"}}add{{else}}delete{{end}} watch!</div>
+        {{end}}
+    {{end}}
 
     &nbsp;
 
@@ -43,7 +46,7 @@
     </form>
 
     &nbsp;
-    {% if results %}
+    {{if .results}}
     <table class="table table-striped table-responsive table-bordered">
         <thead>
         <tr class="d-flex">
@@ -54,22 +57,22 @@
             <th class="col-1"></th>
         </tr>
         </thead>
-        {% for item in results %}
+        {{range $index, $item := .results}}
         <tr class="d-flex">
-            <td class="col-1">{{ loop.index }}</td>
-            <td class="col-2">{{ item.Key }}</td>
-            <td class="col-2" id="match-type-{{ loop.index }}">{{ item.MatchType }}</td>
-            <td class="col-6" id="content-{{ loop.index }}">{{ item.Content }}</td>
+            <td class="col-1">{{ $index }}</td>
+            <td class="col-2">{{ $item.Key }}</td>
+            <td class="col-2" id="match-type-{{ $index }}">{{ $item.MatchType }}</td>
+            <td class="col-6" id="content-{{ $index }}">{{ $item.Content }}</td>
             <td class="col-1">
-                <form id="{{ loop.index }}-delete" action="/watches" method="post">
+                <form id="{{ $index }}-delete" action="/watches" method="post">
                     <input type="hidden" name="op" value="delete">
-                    <input type="hidden" name="id" value="{{ item.Id }}">
+                    <input type="hidden" name="id" value="{{ $item.Id }}">
                     <button class="btn btn-outline-danger" type="submit">Delete</button>
                 </form>
             </td>
         </tr>
-        {% endfor %}
+        {{end}}
     </table>
-    {% endif %}
+    {{end}}
 </div>
-{% endblock %}
+{{ end }}
