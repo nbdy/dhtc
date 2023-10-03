@@ -27,7 +27,16 @@ jobs:
       - name: Build
         run: |
           go get .
-          go build -v -o dhtc-${{ matrix.os }} dhtc
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            go build -v -o dhtc-linux dhtc
+          elif [ "$RUNNER_OS" == "Windows ]; then
+            go build -v -o dhtc-windows.exe dhtc
+          elif [ "$RUNNER_OS" == "macOS"]; then
+            go build -v -o dhtc-macos dhtc
+          else
+            echo "$RUNNER_OS is unsupported"
+            exit 1
+          fi
 
       - name: Release
         uses: softprops/action-gh-release@v1
