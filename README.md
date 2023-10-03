@@ -1,8 +1,6 @@
 # dhtc
 
-![Linux](https://github.com/nbdy/dhtc/actions/workflows/linux.yml/badge.svg)
-![Windows](https://github.com/nbdy/dhtc/actions/workflows/windows.yml/badge.svg)
-![OSX](https://github.com/nbdy/dhtc/actions/workflows/osx.yml/badge.svg)
+[![](http://github-actions.40ants.com/nbdy/dhtc/matrix.svg?only=build)](https://github.com/nbdy/dhtc)
 
 dht crawler with a web ui<br>
 build your own torrent search engine!
@@ -14,20 +12,8 @@ build your own torrent search engine!
 ## features
 
 - [X] Multiplatform compatibility
-  - [X] Linux
-  - [X] Windows
-  - [X] OSX
 - [X] Counter of found torrents
-- [X] Search by
-  - [X] Name
-  - [X] Info hash
-  - [X] File name
-  - [X] Date (only by day)
-- [X] Search types (does not work for Date category)
-  - [X] contains
-  - [X] equals
-  - [X] starts with
-  - [X] ends with
+- [X] Search
 - [X] Sortable tables
 - [X] Interface to add filters for notifications
 - [X] Notify on title found
@@ -42,13 +28,20 @@ build your own torrent search engine!
   - [ ] Pie / Bubble charts for categories
   - [ ] Pie / Bubble charts for file types
 
-
 ## how to..
+
 ### ..run locally
+
+[latest release](https://github.com/nbdy/dhtc/releases/latest)
+
+or
+
 ```shell
 go run main.go
 ```
+
 ### ..run containerized
+
 ```shell
 ./run.sh
 ```
