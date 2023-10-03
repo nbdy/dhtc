@@ -29,7 +29,7 @@ jobs:
           go get .
           if [ "$RUNNER_OS" == "Linux" ]; then
             go build -v -o dhtc-linux dhtc
-          elif [ "$RUNNER_OS" == "Windows ]; then
+          elif [ "$RUNNER_OS" == "Windows" ]; then
             go build -v -o dhtc-windows.exe dhtc
           elif [ "$RUNNER_OS" == "macOS"]; then
             go build -v -o dhtc-macos dhtc
