@@ -22,16 +22,17 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Build
-        run: |
-          go get .
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            go build -v -o dhtc-linux dhtc
-          elif [ "$RUNNER_OS" == "Windows" ]; then
-            go build -v -o dhtc-windows.exe dhtc
-          elif [ "$RUNNER_OS" == "macOS"]; then
-            go build -v -o dhtc-macos dhtc
-          else
-            echo "$RUNNER_OS is unsupported"
-            exit 1
-          fi
+      - name: Go get
+        run: go get .
+
+      - name: Build Linux
+        if: os.runner == 'Linux'
+        run: go build -v -o dhtc-linux dhtc
+
+      - name: Build macOS
+        if: os.runner == 'macOS'
+        run: go build -v -o dhtc-macos dhtc
+
+      - name: Build Windows
+        if: os.runner == 'Windows'
+        run: go build -v -o dhtc-windows.exe dhtc
