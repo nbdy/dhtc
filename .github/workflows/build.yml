@@ -26,13 +26,13 @@ jobs:
         run: go get .
 
       - name: Build Linux
-        if: os.runner == 'Linux'
+        if: runner.os == 'Linux'
         run: go build -v -o dhtc-linux dhtc
 
       - name: Build macOS
-        if: os.runner == 'macOS'
+        if: runner.os == 'macOS'
         run: go build -v -o dhtc-macos dhtc
 
       - name: Build Windows
-        if: os.runner == 'Windows'
+        if: runner.os == 'Windows'
         run: go build -v -o dhtc-windows.exe dhtc
