@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"dhtc/cache"
 	"dhtc/config"
 	"dhtc/db"
@@ -13,17 +14,21 @@ import (
 	"github.com/rs/zerolog/log"
 	telegram "gopkg.in/telebot.v3"
 	"os"
-	"strings"
 )
 
 func ReadFileLines(filePath string) []string {
 	var rVal []string
 
-	content, err := os.ReadFile(filePath)
-	if err == nil {
-		rVal = strings.Split(string(content), "\n")
-	} else {
+	file, err := os.Open(filePath)
+	if err != nil {
 		log.Error().Err(err)
+		return rVal
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		rVal = append(rVal, scanner.Text())
 	}
 
 	return rVal
