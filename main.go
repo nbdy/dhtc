@@ -36,8 +36,11 @@ func crawl(configuration *config.Configuration, database *clover.DB, bot *telegr
 	bootstrapNodes := ReadFileLines(configuration.BootstrapNodeFile)
 
 	if len(bootstrapNodes) == 0 {
-		log.Error().Msg("No bootstrap nodes")
-		return
+		log.Warn().Msg("No bootstrap nodes found in '" + configuration.BootstrapNodeFile + "'.")
+		log.Info().Msg("Using default bootstrap nodes.")
+		bootstrapNodes = []string{
+			"router.bittorrent.com:6881", "dht.transmissionbt.com:6881", "dht.libtorrent.org:25401",
+		}
 	}
 
 	trawlingManager := dhtcclient.NewManager(bootstrapNodes, indexerAddrs, 1, configuration.MaxNeighbors)
