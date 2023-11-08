@@ -128,7 +128,7 @@ func (p *Protocol) onMessage(msg *Message, addr *net.UDPAddr) {
 	case "r":
 		// Query messages have a `q` field which indicates their type but response messages have no such field that we
 		// can rely on.
-		// The idea is you'd use transaction ID (the `t` key) to deduce the type of a response message, as it must be
+		// The idea is you'd use transaction ID (the `t` key) to deduce the type of response message, as it must be
 		// sent in response to a query message (with the same transaction ID) that we have sent earlier.
 		// This approach is, unfortunately, not very practical for our needs since we send up to thousands messages per
 		// second, meaning that we'd run out of transaction IDs very quickly (since some [many?] clients assume
@@ -136,7 +136,7 @@ func (p *Protocol) onMessage(msg *Message, addr *net.UDPAddr) {
 		// not get a response at all).
 		// Our approach uses an ad-hoc pattern matching: all response messages share a subset of fields (such as `t`,
 		// `y`) but only one type of them contain a particular field (such as `token` field is unique to `get_peers`
-		// responses, `samples` is unique to `sample_infohashes` etc).
+		// responses, `samples` is unique to `sample_infohashes` etc.).
 		//
 		// sample_infohashes > get_peers > find_node > ping / announce_peer
 		if len(msg.R.Samples) != 0 { // The message should be a sample_infohashes response.
