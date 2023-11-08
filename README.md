@@ -35,7 +35,7 @@ build your own torrent search engine!
 [latest release](https://github.com/nbdy/dhtc/releases/latest)
 
 ```shell
-./dhtc-{YOUR_DISTRIBUTIN}
+./dhtc-{YOUR_DISTRIBUTION}
 ```
 
 or
