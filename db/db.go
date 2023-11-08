@@ -9,6 +9,7 @@ import (
 	"github.com/ostafen/clover/v2/document"
 	"github.com/ostafen/clover/v2/query"
 	"math/rand"
+	"os"
 )
 
 const WatchTable = "watches"
@@ -62,10 +63,14 @@ func InsertMetadata(config *config.Configuration, db *clover.DB, md dhtcclient.M
 }
 
 func OpenDatabase(config *config.Configuration) *clover.DB {
-	db, err := clover.Open(config.DbName)
-
+	err := os.MkdirAll(config.DbName, os.ModePerm)
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Could not create database directory: '" + config.DbName + "'")
+	}
+
+	db, err := clover.Open(config.DbName)
+	if err != nil {
+		fmt.Println("Could not open database:", err)
 	}
 
 	_ = db.CreateCollection(TorrentTable)
