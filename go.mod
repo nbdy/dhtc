@@ -3,8 +3,8 @@ module dhtc
 go 1.18
 
 require (
-	github.com/anacrolix/missinggo/v2 v2.7.2
-	github.com/anacrolix/torrent v1.52.5
+	github.com/anacrolix/missinggo/v2 v2.7.3
+	github.com/anacrolix/torrent v1.53.1
 	github.com/deckarep/golang-set/v2 v2.3.1
 	github.com/gin-gonic/contrib v0.0.0-20221130124618-7e01895a63f2
 	github.com/gin-gonic/gin v1.9.1
