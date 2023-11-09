@@ -34,10 +34,6 @@ build your own torrent search engine!
 
 [latest release](https://github.com/nbdy/dhtc/releases/latest)
 
-```shell
-./dhtc-{YOUR_DISTRIBUTION}
-```
-
 or
 
 ```shell
@@ -47,7 +43,7 @@ go run main.go
 ### ..run containerized
 
 ```shell
-./run.sh
+docker compose up
 ```
 
 either way an instance should be running on [localhost:4200](http://127.0.0.1:4200).
