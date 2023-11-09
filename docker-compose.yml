@@ -1,4 +1,12 @@
 version: '3'
+
 services:
   dhtc:
     build: .
+    ports:
+      - "127.0.0.1:4200:4200"
+    volumes:
+      - dhtcdb:/dhtc/dhtcdb
+
+volumes:
+  dhtcdb:
