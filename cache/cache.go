@@ -12,7 +12,7 @@ import (
 
 var InfoHashCache = mapset.NewSet[[20]byte]()
 
-func PopulateInfoHashCacheFromDatabase(database clover.DB) {
+func PopulateInfoHashCacheFromDatabase(database *clover.DB) {
 	all, _ := database.FindAll(query.NewQuery(db.TorrentTable))
 	for _, d := range all {
 		ih := d.Get("InfoHash").(string)

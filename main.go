@@ -80,6 +80,8 @@ func main() {
 	cfg := config.ParseArguments()
 	database := db.OpenDatabase(cfg)
 
+	cache.PopulateInfoHashCacheFromDatabase(database)
+
 	db.AddToBlacklist(database, ReadFileLines(cfg.NameBlacklist), "0")
 	db.AddToBlacklist(database, ReadFileLines(cfg.FileBlacklist), "1")
 
