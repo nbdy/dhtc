@@ -8,11 +8,11 @@ COPY db /dhtc/db
 COPY dhtc-client /dhtc/dhtc-client
 COPY notifier /dhtc/notifier
 COPY ui /dhtc/ui
+COPY cmd /dhtc/cmd
 COPY go.mod /dhtc/go.mod
 COPY go.sum /dhtc/go.sum
-COPY main.go /dhtc/main.go
 
-RUN go build
+RUN go build -o dhtc /dhtc/cmd/dhtc/main.go
 
 EXPOSE 4200
 
