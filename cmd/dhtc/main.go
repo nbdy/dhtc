@@ -34,19 +34,9 @@ func ReadFileLines(filePath string) []string {
 	return rVal
 }
 
-func crawl(configuration *config.Configuration, database *clover.DB, bot *telegram.Bot) {
+func crawl(configuration *config.Configuration, bootstrapNodes []string, database *clover.DB, bot *telegram.Bot) {
 	indexerAddrs := []string{"0.0.0.0:0"}
 	interruptChan := make(chan os.Signal, 1)
-
-	bootstrapNodes := ReadFileLines(configuration.BootstrapNodeFile)
-
-	if len(bootstrapNodes) == 0 {
-		log.Warn().Msg("No bootstrap nodes found in '" + configuration.BootstrapNodeFile + "'.")
-		log.Info().Msg("Using default bootstrap nodes.")
-		bootstrapNodes = []string{
-			"router.bittorrent.com:6881", "dht.transmissionbt.com:6881", "dht.libtorrent.org:25401",
-		}
-	}
 
 	trawlingManager := dhtcclient.NewManager(bootstrapNodes, indexerAddrs, 1, configuration.MaxNeighbors)
 	metadataSink := dhtcclient.NewSink(configuration.DrainTimeout, configuration.MaxLeeches)
@@ -85,11 +75,21 @@ func main() {
 	db.AddToBlacklist(database, ReadFileLines(cfg.NameBlacklist), "0")
 	db.AddToBlacklist(database, ReadFileLines(cfg.FileBlacklist), "1")
 
+	bootstrapNodes := ReadFileLines(cfg.BootstrapNodeFile)
+
+	if len(bootstrapNodes) == 0 {
+		log.Warn().Msg("No bootstrap nodes found in '" + cfg.BootstrapNodeFile + "'.")
+		log.Info().Msg("Using default bootstrap nodes.")
+		bootstrapNodes = []string{
+			"router.bittorrent.com:6881", "dht.transmissionbt.com:6881", "dht.libtorrent.org:25401",
+		}
+	}
+
 	if !cfg.OnlyWebServer {
 		bot := notifier.SetupTelegramBot(cfg)
 
 		for i := 0; i < cfg.CrawlerThreads; i++ {
-			go crawl(cfg, database, bot)
+			go crawl(cfg, bootstrapNodes, database, bot)
 		}
 	}
 
