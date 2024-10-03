@@ -5,6 +5,11 @@
 dht crawler with a web ui<br>
 build your own torrent search engine!
 
+#### this project is in maintenance mode
+
+#### i'll not add new features due to time being scarce
+
+
 ## requirements
 [golang 1.23](https://go.dev/dl/) or
 [docker](https://docs.docker.com/get-docker/)
@@ -16,17 +21,17 @@ build your own torrent search engine!
 - [X] Search
 - [X] Sortable tables
 - [X] Interface to add filters for notifications
+- [X] Regex based blacklist
 - [X] Notify on title found
   - [X] Telegram
-  - [ ] Mail
-- [ ] Expandable list items with extra info
-  - [ ] List of files
-  - [ ] Movie/Book/Music metadata lookup
-- [X] Regex based blacklist
-- [ ] Statistics
-  - [ ] Line charts for day, week, month, year
-  - [ ] Pie / Bubble charts for categories
-  - [ ] Pie / Bubble charts for file types
+  - [ ] ~~Mail~~
+- [ ] ~~Expandable list items with extra info~~
+  - [ ] ~~List of files~~
+  - [ ] ~~Movie/Book/Music metadata lookup~~
+- [ ] ~~Statistics~~
+  - [ ] ~~Line charts for day, week, month, year~~
+  - [ ] ~~Pie / Bubble charts for categories~~
+  - [ ] ~~Pie / Bubble charts for file types~~
 
 ## how to..
 
@@ -37,7 +42,7 @@ build your own torrent search engine!
 or
 
 ```shell
-go run main.go
+go run cmd/dhtc/main.go
 ```
 
 ### ..run containerized
