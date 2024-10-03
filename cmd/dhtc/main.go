@@ -81,7 +81,8 @@ func main() {
 		log.Warn().Msg("No bootstrap nodes found in '" + cfg.BootstrapNodeFile + "'.")
 		log.Info().Msg("Using default bootstrap nodes.")
 		bootstrapNodes = []string{
-			"router.bittorrent.com:6881", "dht.transmissionbt.com:6881", "dht.libtorrent.org:25401",
+			"router.bittorrent.com:6881", "router.utorrent.com:6881",
+			"dht.transmissionbt.com:6881", "dht.libtorrent.org:25401",
 		}
 	}
 
