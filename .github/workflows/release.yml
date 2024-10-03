@@ -29,15 +29,15 @@ jobs:
 
       - name: Build Linux
         if: runner.os == 'Linux'
-        run: go build -v -o dhtc-linux dhtc
+        run: go build -v -o dhtc-linux cmd/dhtc/main.go
 
       - name: Build macOS
         if: runner.os == 'macOS'
-        run: go build -v -o dhtc-macos dhtc
+        run: go build -v -o dhtc-macos cmd/dhtc/main.go
 
       - name: Build Windows
         if: runner.os == 'Windows'
-        run: go build -v -o dhtc-windows.exe dhtc
+        run: go build -v -o dhtc-windows.exe cmd/dhtc/main.go
 
       - name: Release
         uses: softprops/action-gh-release@v1
