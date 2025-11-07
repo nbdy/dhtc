@@ -3,8 +3,9 @@ package notifier
 import (
 	"dhtc/config"
 	"fmt"
-	telegram "gopkg.in/telebot.v3"
 	"time"
+
+	telegram "gopkg.in/telebot.v3"
 )
 
 func SetupTelegramBot(config *config.Configuration) *telegram.Bot {

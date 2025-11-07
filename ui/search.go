@@ -2,8 +2,9 @@ package ui
 
 import (
 	"dhtc/db"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (c *Controller) SearchGet(ctx *gin.Context) {

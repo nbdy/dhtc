@@ -9,11 +9,12 @@ import (
 	"dhtc/notifier"
 	"dhtc/ui"
 	"fmt"
+	"os"
+
 	"github.com/ostafen/clover/v2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	telegram "gopkg.in/telebot.v3"
-	"os"
 )
 
 func ReadFileLines(filePath string) []string {

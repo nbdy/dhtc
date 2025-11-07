@@ -2,9 +2,10 @@ package ui
 
 import (
 	"dhtc/db"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (c *Controller) DiscoverGet(ctx *gin.Context) {
