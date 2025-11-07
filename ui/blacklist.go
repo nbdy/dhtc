@@ -2,9 +2,10 @@ package ui
 
 import (
 	"dhtc/db"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
-	"net/http"
 )
 
 func (c *Controller) BlacklistGet(ctx *gin.Context) {
