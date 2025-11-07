@@ -2,14 +2,15 @@ package ui
 
 import (
 	"dhtc/config"
-	"github.com/gin-gonic/contrib/renders/multitemplate"
-	"github.com/gin-gonic/gin"
-	"github.com/leekchan/gtf"
-	"github.com/ostafen/clover/v2"
 	"html/template"
 	"io/fs"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/contrib/renders/multitemplate"
+	"github.com/gin-gonic/gin"
+	"github.com/leekchan/gtf"
+	"github.com/ostafen/clover/v2"
 )
 
 type Controller struct {
