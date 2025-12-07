@@ -11,7 +11,7 @@ build your own torrent search engine!
 
 
 ## requirements
-[golang 1.23](https://go.dev/dl/) or
+[golang 1.24](https://go.dev/dl/) or
 [docker](https://docs.docker.com/get-docker/)
 
 ## features
