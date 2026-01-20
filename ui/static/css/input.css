@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .sortable thead th:not(.no-sort) {
+        cursor: pointer;
+    }
+
+    .sortable thead th:not(.no-sort)::after {
+        content: " ▸";
+        opacity: 0;
+        transition: opacity 0.1s ease-in-out;
+    }
+
+    .sortable thead th:not(.no-sort):hover::after {
+        opacity: 0.5;
+    }
+
+    .sortable thead th:not(.no-sort).dir-d::after {
+        content: " ▾";
+        opacity: 1;
+    }
+
+    .sortable thead th:not(.no-sort).dir-u::after {
+        content: " ▴";
+        opacity: 1;
+    }
+}

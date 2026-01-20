@@ -1,0 +1,141 @@
+{{ define "trawl" }}
+{{ template "base" .}}
+{{ end }}
+
+{{define "extra_css"}}{{end}}
+
+{{define "extra_js"}}
+<script src="/js/sortable.min.js"></script>
+<script>
+    const socket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/trawl');
+    const tableBody = document.querySelector('#trawl-table tbody');
+    const transmissionEnabled = {{ if .config.TransmissionURL }}true{{ else }}false{{ end }};
+    const aria2Enabled = {{ if .config.Aria2URL }}true{{ else }}false{{ end }};
+    const delugeEnabled = {{ if .config.DelugeURL }}true{{ else }}false{{ end }};
+    const qbittorrentEnabled = {{ if .config.QBittorrentURL }}true{{ else }}false{{ end }};
+
+    const maxItemsSelect = document.getElementById('max-items');
+    let maxItems = parseInt(localStorage.getItem('trawl-max-items')) || 100;
+    maxItemsSelect.value = maxItems;
+
+    maxItemsSelect.addEventListener('change', (e) => {
+        maxItems = parseInt(e.target.value);
+        localStorage.setItem('trawl-max-items', maxItems);
+        trimTable();
+    });
+
+    function trimTable() {
+        while (tableBody.children.length > maxItems) {
+            tableBody.removeChild(tableBody.lastChild);
+        }
+    }
+
+    socket.onmessage = function(event) {
+        const md = JSON.parse(event.data);
+        const row = document.createElement('tr');
+        row.className = 'hover transition-all duration-500 bg-primary/10';
+        
+        // Format size
+        const size = formatBytes(md.TotalSize);
+        const date = new Date(md.DiscoveredOn * 1000).toLocaleString();
+        const infoHashHex = md.InfoHashHex;
+        const magnet = `magnet:?xt=urn:btih:${infoHashHex}&dn=${encodeURIComponent(md.Name)}`;
+
+        let actionHtml = `
+            <div class="join join-vertical md:join-horizontal">
+                <a href="${magnet}" class="btn btn-info btn-xs join-item" title="Open magnet link">Open</a>
+        `;
+        
+        if (transmissionEnabled) {
+            actionHtml += `<button class="btn btn-secondary btn-xs join-item" onclick="sendToDownloader('transmission', '${magnet}')" title="Send to Transmission">T</button>`;
+        }
+        if (aria2Enabled) {
+            actionHtml += `<button class="btn btn-accent btn-xs join-item" onclick="sendToDownloader('aria2', '${magnet}')" title="Send to Aria2">A</button>`;
+        }
+        if (delugeEnabled) {
+            actionHtml += `<button class="btn btn-primary btn-xs join-item" onclick="sendToDownloader('deluge', '${magnet}')" title="Send to Deluge">D</button>`;
+        }
+        if (qbittorrentEnabled) {
+            actionHtml += `<button class="btn btn-warning btn-xs join-item" onclick="sendToDownloader('qbittorrent', '${magnet}')" title="Send to qBittorrent">Q</button>`;
+        }
+        
+        actionHtml += `</div>`;
+
+        const categoriesHtml = md.Categories ? md.Categories.map(cat => `<div class="badge badge-outline badge-sm">${cat}</div>`).join('') : '';
+        
+        row.innerHTML = `
+            <td class="whitespace-normal break-all font-medium">${md.Name}</td>
+            <td class="hidden md:table-cell"><div class="flex flex-wrap gap-1">${categoriesHtml}</div></td>
+            <td data-sort="${md.TotalSize}" class="font-mono text-sm">${size}</td>
+            <td class="hidden lg:table-cell text-center">${md.Files ? md.Files.length : 0}</td>
+            <td class="hidden sm:table-cell whitespace-nowrap opacity-70 text-sm">${date}</td>
+            <td class="text-right">${actionHtml}</td>
+        `;
+        
+        if (tableBody.firstChild) {
+            tableBody.insertBefore(row, tableBody.firstChild);
+        } else {
+            tableBody.appendChild(row);
+        }
+
+        // Fade out the highlight
+        setTimeout(() => {
+            row.classList.remove('bg-primary/10');
+        }, 1000);
+
+        trimTable();
+    };
+
+    function formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+</script>
+{{end}}
+
+{{ define "body" }}
+<div class="container mx-auto p-4 md:p-8">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tight">Real-time Trawl</h1>
+            <p class="text-base-content/60">Live view of incoming torrents from the DHT network</p>
+        </div>
+        <div class="form-control w-fit self-end md:self-auto">
+            <label class="label">
+                <span class="label-text font-bold">Max items</span>
+            </label>
+            <select id="max-items" class="select select-bordered select-sm w-fit pr-10">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="250">250</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+                <option value="5000">5000</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="card bg-base-100 shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table id="trawl-table" class="table table-zebra w-full sortable">
+                <thead>
+                <tr class="bg-base-300">
+                    <th>Name</th>
+                    <th class="hidden md:table-cell">Tags</th>
+                    <th>Total size</th>
+                    <th class="hidden lg:table-cell">File count</th>
+                    <th class="hidden sm:table-cell">First seen</th>
+                    <th class="text-right">Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{ end }}

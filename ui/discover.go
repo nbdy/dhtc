@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"dhtc/db"
 	"net/http"
 	"strconv"
 
@@ -9,10 +8,26 @@ import (
 )
 
 func (c *Controller) DiscoverGet(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "discover", gin.H{
-		"results": db.GetNRandomEntries(c.Database, 50),
-		"path":    ctx.FullPath(),
-	})
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "50"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 50
+	}
+	offset := (page - 1) * limit
+
+	results, total, _ := c.Database.GetLatest(limit, offset)
+
+	h := c.getCommonH(ctx)
+	h["results"] = results
+	h["currentPage"] = page
+	h["totalPages"] = (total + int64(limit) - 1) / int64(limit)
+	h["limit"] = limit
+	h["total"] = total
+
+	ctx.HTML(http.StatusOK, "discover", h)
 }
 
 func (c *Controller) DiscoverPost(ctx *gin.Context) {
@@ -21,8 +36,8 @@ func (c *Controller) DiscoverPost(ctx *gin.Context) {
 		N = 50
 	}
 
-	ctx.HTML(http.StatusOK, "discover", gin.H{
-		"results": db.GetNRandomEntries(c.Database, N),
-		"path":    ctx.FullPath(),
-	})
+	h := c.getCommonH(ctx)
+	h["results"] = c.Database.GetNRandomEntries(N)
+
+	ctx.HTML(http.StatusOK, "discover", h)
 }

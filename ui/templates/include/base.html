@@ -1,18 +1,45 @@
 {{ define "base" }}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark" class="h-full">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>dhtc</title>
-    <link href="/css/bootstrap.css" rel="stylesheet">
-    <script src="/js/bootstrap.js"></script>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/themes.css" rel="stylesheet">
+    <script>
+        const theme = localStorage.getItem('theme');
+        if (theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        async function sendToDownloader(service, magnet) {
+            try {
+                const response = await fetch(`/download/${service}?magnet=${encodeURIComponent(magnet)}`);
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error);
+            }
+        }
+    </script>
     {{ block "extra_css" . }}{{ end }}
 </head>
-<body>
-    {{ block "body" . }}{{ end }}
+<body class="flex flex-col min-h-screen bg-base-200">
+    {{ template "navbar" . }}
+    <main class="flex-grow">
+        {{ block "body" . }}{{ end }}
+    </main>
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
+        <div>
+            <p>dhtc - DHT Crawler & UI</p>
+        </div>
+    </footer>
 </body>
-<script src="/js/bootstrap.js"></script>
 {{ block "extra_js" . }}{{ end }}
 </html>
 {{ end }}

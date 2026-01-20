@@ -1,19 +1,35 @@
 {{ define "discover" }}
-{{ template "navbar" . }}
 {{ template "base" .}}
 {{ end }}
 
-{{define "extra_css"}}
-<link href="/css/sortable.min.css" rel="stylesheet">
-{{end}}
+{{define "extra_css"}}{{end}}
 
 {{define "extra_js"}}
 <script src="/js/sortable.min.js"></script>
 {{end}}
 
 {{ define "body" }}
-<div class="container">
-    &nbsp;
+<div class="container mx-auto p-4 md:p-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tight">Discover</h1>
+            <p class="text-base-content/60">Explore the latest additions to the database</p>
+        </div>
+        <form action="/discover" method="post" class="flex gap-2">
+             <div class="join">
+                <select name="limit" class="select select-bordered select-sm join-item pr-10">
+                    <option value="25" {{ if eq .limit 25 }}selected{{ end }}>25</option>
+                    <option value="50" {{ if eq .limit 50 }}selected{{ end }}>50</option>
+                    <option value="100" {{ if eq .limit 100 }}selected{{ end }}>100</option>
+                    <option value="250" {{ if eq .limit 250 }}selected{{ end }}>250</option>
+                    <option value="500" {{ if eq .limit 500 }}selected{{ end }}>500</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm join-item">Randomize</button>
+             </div>
+        </form>
+    </div>
+    
     {{ template "torrent_table" . }}
+    {{ template "pagination" . }}
 </div>
 {{ end }}

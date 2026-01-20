@@ -1,0 +1,40 @@
+{{define "pagination"}}
+{{if gt .totalPages 1}}
+<div class="flex flex-col sm:flex-row justify-between items-center mt-8 gap-4 px-2">
+    <div class="flex flex-col sm:flex-row items-center gap-4">
+        <div class="text-sm opacity-60">
+            Page <strong>{{.currentPage}}</strong> of <strong>{{.totalPages}}</strong>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-sm opacity-60">Items per page:</span>
+            <select class="select select-bordered select-xs pr-8" onchange="window.location.href='{{.path}}?page=1&limit=' + this.value + '{{if .searchInput}}&key={{.key}}&match-type={{.matchType}}&search-input={{.searchInput}}{{end}}'">
+                <option value="25" {{if eq .limit 25}}selected{{end}}>25</option>
+                <option value="50" {{if eq .limit 50}}selected{{end}}>50</option>
+                <option value="100" {{if eq .limit 100}}selected{{end}}>100</option>
+                <option value="250" {{if eq .limit 250}}selected{{end}}>250</option>
+                <option value="500" {{if eq .limit 500}}selected{{end}}>500</option>
+            </select>
+        </div>
+    </div>
+    <div class="join">
+        {{if gt .currentPage 1}}
+            <a href="{{.path}}?page=1&limit={{.limit}}{{if .searchInput}}&key={{.key}}&match-type={{.matchType}}&search-input={{.searchInput}}{{end}}" class="join-item btn btn-sm">««</a>
+            <a href="{{.path}}?page={{add .currentPage -1}}&limit={{.limit}}{{if .searchInput}}&key={{.key}}&match-type={{.matchType}}&search-input={{.searchInput}}{{end}}" class="join-item btn btn-sm">Prev</a>
+        {{else}}
+            <button class="join-item btn btn-sm btn-disabled">««</button>
+            <button class="join-item btn btn-sm btn-disabled">Prev</button>
+        {{end}}
+        
+        <button class="join-item btn btn-sm btn-active pointer-events-none px-6">{{.currentPage}}</button>
+        
+        {{if lt .currentPage .totalPages}}
+            <a href="{{.path}}?page={{add .currentPage 1}}&limit={{.limit}}{{if .searchInput}}&key={{.key}}&match-type={{.matchType}}&search-input={{.searchInput}}{{end}}" class="join-item btn btn-sm">Next</a>
+            <a href="{{.path}}?page={{.totalPages}}&limit={{.limit}}{{if .searchInput}}&key={{.key}}&match-type={{.matchType}}&search-input={{.searchInput}}{{end}}" class="join-item btn btn-sm">»»</a>
+        {{else}}
+            <button class="join-item btn btn-sm btn-disabled">Next</button>
+            <button class="join-item btn btn-sm btn-disabled">»»</button>
+        {{end}}
+    </div>
+</div>
+{{end}}
+{{end}}
