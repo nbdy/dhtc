@@ -17,6 +17,9 @@ func (c *Controller) SettingsPost(ctx *gin.Context) {
 		ctx.HTML(http.StatusBadRequest, "settings", h)
 		return
 	}
+	if c.Notifier != nil {
+		c.Notifier.Setup(c.Configuration)
+	}
 	h := c.getCommonH(ctx)
 	h["saved"] = true
 	ctx.HTML(http.StatusOK, "settings", h)

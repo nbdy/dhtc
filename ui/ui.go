@@ -3,6 +3,7 @@ package ui
 import (
 	"dhtc/config"
 	"dhtc/db"
+	"dhtc/notifier"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -19,6 +20,7 @@ type Controller struct {
 	Database      db.Repository
 	Configuration *config.Configuration
 	Hub           *Hub
+	Notifier      *notifier.Manager
 }
 
 func loadTemplates() multitemplate.Render {
@@ -57,7 +59,7 @@ func (c *Controller) getCommonH(ctx *gin.Context) gin.H {
 	}
 }
 
-func RunWebServer(configuration *config.Configuration, database db.Repository, hub *Hub) {
+func RunWebServer(configuration *config.Configuration, database db.Repository, hub *Hub, nManager *notifier.Manager) {
 	// gin.SetMode(gin.ReleaseMode)
 
 	srv := gin.Default()
@@ -77,6 +79,7 @@ func RunWebServer(configuration *config.Configuration, database db.Repository, h
 		Database:      database,
 		Configuration: configuration,
 		Hub:           hub,
+		Notifier:      nManager,
 	}
 
 	srv.GET("", uiCtrl.Dashboard)

@@ -108,8 +108,9 @@ func main() {
 	hub := ui.NewHub()
 	go hub.Run()
 
+	var nManager *notifier.Manager
 	if !cfg.OnlyWebServer {
-		nManager := notifier.SetupNotifiers(cfg)
+		nManager = notifier.SetupNotifiers(cfg)
 
 		if cfg.Statistics {
 			go collectStats(database)
@@ -120,5 +121,5 @@ func main() {
 		}
 	}
 
-	ui.RunWebServer(cfg, database, hub)
+	ui.RunWebServer(cfg, database, hub, nManager)
 }
