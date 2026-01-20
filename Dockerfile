@@ -1,19 +1,19 @@
-FROM golang:latest
+FROM node:20 AS css-builder
+WORKDIR /build
+COPY package*.json ./
+RUN npm install
+COPY ui ./ui
+COPY tailwind.config.js ./
+RUN npm run build:css
 
+FROM golang:latest AS go-builder
 WORKDIR /dhtc
+COPY . .
+COPY --from=css-builder /build/ui/static/css/style.css ./ui/static/css/style.css
+RUN go build -o dhtc cmd/dhtc/main.go
 
-COPY cache /dhtc/cache
-COPY config /dhtc/config
-COPY db /dhtc/db
-COPY dhtc-client /dhtc/dhtc-client
-COPY notifier /dhtc/notifier
-COPY ui /dhtc/ui
-COPY cmd /dhtc/cmd
-COPY go.mod /dhtc/go.mod
-COPY go.sum /dhtc/go.sum
-
-RUN go build -o dhtc /dhtc/cmd/dhtc/main.go
-
+FROM debian:bookworm-slim
+WORKDIR /dhtc
+COPY --from=go-builder /dhtc/dhtc .
 EXPOSE 4200
-
 CMD ["/dhtc/dhtc"]

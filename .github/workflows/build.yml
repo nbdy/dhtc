@@ -24,6 +24,17 @@ jobs:
         with:
           go-version: '1.24'
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build CSS
+        run: npm run build:css
+
       - name: Go get
         run: go get dhtc
 
