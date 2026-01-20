@@ -2,24 +2,33 @@ package ui
 
 import (
 	"dhtc/config"
+	"dhtc/db"
 	"html/template"
 	"io/fs"
 	"net/http"
 	"strings"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/contrib/renders/multitemplate"
 	"github.com/gin-gonic/gin"
 	"github.com/leekchan/gtf"
-	"github.com/ostafen/clover/v2"
 )
 
 type Controller struct {
-	Database      *clover.DB
+	Database      db.Repository
 	Configuration *config.Configuration
+	Hub           *Hub
 }
 
 func loadTemplates() multitemplate.Render {
 	renderer := multitemplate.New()
+
+	funcMap := template.FuncMap{
+		"add": func(a, b int) int {
+			return a + b
+		},
+	}
 
 	viewDirectory, _ := templates.ReadDir("templates/view")
 	includeDirectory, _ := templates.ReadDir("templates/include")
@@ -34,23 +43,40 @@ func loadTemplates() multitemplate.Render {
 		}
 		viewFileName := viewPath.Name()
 		viewName := strings.TrimSuffix(viewFileName, ".html")
-		tpl := template.Must(gtf.New(viewName).ParseFS(templates, append(includeFiles, "templates/view/"+viewFileName)...))
+		tpl := template.Must(gtf.New(viewName).Funcs(funcMap).ParseFS(templates, append(includeFiles, "templates/view/"+viewFileName)...))
 		renderer.Add(viewName, tpl)
 	}
 
 	return renderer
 }
 
-func RunWebServer(configuration *config.Configuration, database *clover.DB) {
+func (c *Controller) getCommonH(ctx *gin.Context) gin.H {
+	return gin.H{
+		"path":   ctx.FullPath(),
+		"config": c.Configuration,
+	}
+}
+
+func RunWebServer(configuration *config.Configuration, database db.Repository, hub *Hub) {
 	// gin.SetMode(gin.ReleaseMode)
 
 	srv := gin.Default()
 	srv.HTMLRender = loadTemplates()
 	_ = srv.SetTrustedProxies(nil)
 
+	store := cookie.NewStore([]byte(configuration.SessionSecret))
+	srv.Use(sessions.Sessions("dhtc-session", store))
+
+	if configuration.AuthUser != "" && configuration.AuthPass != "" {
+		srv.Use(gin.BasicAuth(gin.Accounts{
+			configuration.AuthUser: configuration.AuthPass,
+		}))
+	}
+
 	uiCtrl := Controller{
 		Database:      database,
 		Configuration: configuration,
+		Hub:           hub,
 	}
 
 	srv.GET("", uiCtrl.Dashboard)
@@ -63,6 +89,28 @@ func RunWebServer(configuration *config.Configuration, database *clover.DB) {
 	srv.POST("/watches", uiCtrl.WatchPost)
 	srv.GET("/blacklist", uiCtrl.BlacklistGet)
 	srv.POST("/blacklist", uiCtrl.BlacklistPost)
+	srv.GET("/settings", uiCtrl.SettingsGet)
+	srv.GET("/trawl", uiCtrl.Trawl)
+	srv.GET("/ws/trawl", func(c *gin.Context) {
+		uiCtrl.HandleWebSocket(c.Writer, c.Request)
+	})
+
+	srv.GET("/download/transmission", uiCtrl.SendToTransmission)
+	srv.GET("/download/aria2", uiCtrl.SendToAria2)
+	srv.GET("/download/deluge", uiCtrl.SendToDeluge)
+	srv.GET("/download/qbittorrent", uiCtrl.SendToQBittorrent)
+
+	srv.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	api := srv.Group("/api")
+	{
+		api.GET("/search", uiCtrl.APISearch)
+		api.GET("/stats", uiCtrl.APIStats)
+		api.GET("/categories", uiCtrl.APICategories)
+		api.GET("/latest", uiCtrl.APILatest)
+	}
 
 	css, _ := fs.Sub(static, "static/css")
 	js, _ := fs.Sub(static, "static/js")
@@ -71,7 +119,6 @@ func RunWebServer(configuration *config.Configuration, database *clover.DB) {
 	srv.StaticFS("/js", http.FS(js))
 
 	err := srv.Run(configuration.Address)
-
 	if err != nil {
 		return
 	}

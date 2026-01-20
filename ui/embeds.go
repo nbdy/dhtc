@@ -2,7 +2,7 @@ package ui
 
 import "embed"
 
-//go:embed templates/**/*.html
+//go:embed templates
 var templates embed.FS
 
 //go:embed static

@@ -1,19 +1,202 @@
 {{ define "dashboard" }}
-{{ template "navbar" . }}
 {{ template "base" .}}
 {{ end }}
 
 {{ define "extra_js" }}
 <script src="/js/chart.umd.min.js"></script>
-<script src="/js/livechart.js"></script>
 {{ end }}
 
 {{ define "extra_css" }}{{ end }}
 
 {{ define "body" }}
-    <div class="container">
-        &nbsp;
-        <h2>Statistics</h2>
-        <h4>Collected info hashes: {{ .info_hash_count }}</h4>
+<div class="container mx-auto p-4 md:p-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tight">Dashboard</h1>
+            <p class="text-base-content/60">Overview of your DHT crawler activity</p>
+        </div>
+        <div class="stats shadow bg-base-100">
+            <div class="stat">
+                <div class="stat-title text-sm opacity-70">Total Torrents</div>
+                <div class="stat-value text-primary font-mono">{{ .info_hash_count }}</div>
+            </div>
+        </div>
     </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="card bg-base-100 shadow-xl border border-base-300">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="card-title text-lg">Discovery Timeline</h2>
+                    <select id="granularitySelector" class="select select-bordered select-sm w-fit pr-10">
+                        <option value="minute">Last Hour (Minutely)</option>
+                        <option value="hour" selected>Last 24 Hours (Hourly)</option>
+                        <option value="day">Last 30 Days (Daily)</option>
+                    </select>
+                </div>
+                <div id="discoveryChartPlaceholder" class="flex flex-col items-center justify-center h-[400px] opacity-40 {{ if gt .info_hash_count 0 }}hidden{{ end }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    <p>No discovery data available yet</p>
+                </div>
+                <div class="relative w-full h-[400px] {{ if le .info_hash_count 0 }}hidden{{ end }}">
+                    <canvas id="discoveryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl border border-base-300">
+            <div class="card-body p-4 sm:p-6">
+                <h2 class="card-title text-lg mb-4">Category Distribution</h2>
+                {{ if .catDist }}
+                <div class="relative w-full flex justify-center h-[400px]">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                {{ else }}
+                <div class="flex flex-col items-center justify-center h-[400px] opacity-40">
+                    <p>No categories found</p>
+                </div>
+                {{ end }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        const textColor = isDark ? '#A6ADBB' : '#1f2937';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+        Chart.defaults.color = textColor;
+
+        let discoveryChart, categoryChart;
+
+        async function refreshStats() {
+            const granularity = document.getElementById('granularitySelector').value;
+            try {
+                const response = await fetch(`/api/stats?interval=${granularity}&limit=${granularity === 'minute' ? 60 : (granularity === 'hour' ? 24 : 30)}`);
+                const data = await response.json();
+                if (data.stats && data.stats.length > 0) {
+                    const stats = data.stats.reverse();
+                    const labels = stats.map(s => {
+                        const d = new Date(s.Timestamp);
+                        if (granularity === 'minute') return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                        if (granularity === 'hour') return (d.getDate()).toString().padStart(2, '0') + '.' + (d.getMonth()+1).toString().padStart(2, '0') + ' ' + d.getHours().toString().padStart(2, '0') + ':00';
+                        return (d.getDate()).toString().padStart(2, '0') + '.' + (d.getMonth()+1).toString().padStart(2, '0');
+                    });
+                    const counts = stats.map(s => s.TorrentCount);
+
+                    updateDiscoveryChart(labels, counts);
+                    
+                    document.getElementById('discoveryChartPlaceholder').classList.add('hidden');
+                    const canvas = document.getElementById('discoveryChart');
+                    if (canvas && canvas.parentElement) canvas.parentElement.classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error("Failed to refresh stats:", e);
+            }
+        }
+
+        async function refreshCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const catDataRaw = await response.json();
+                const sortedCats = Object.entries(catDataRaw).sort((a, b) => b[1] - a[1]);
+                const catLabels = sortedCats.map(x => x[0]);
+                const catValues = sortedCats.map(x => x[1]);
+                const catColors = ['#ff99ad', '#4fb3f6', '#fdd56d', '#49cc90', '#9b66ff', '#ffa040', '#cfd2d7', '#00a2eb', '#ff6347', '#3cb371'];
+
+                updateCategoryChart(catLabels, catValues, catColors);
+            } catch (e) {
+                console.error("Failed to refresh categories:", e);
+            }
+        }
+
+        function updateDiscoveryChart(labels, rates) {
+            if (discoveryChart) {
+                discoveryChart.data.labels = labels;
+                discoveryChart.data.datasets[0].data = rates;
+                discoveryChart.update();
+            } else {
+                const ctx = document.getElementById('discoveryChart')?.getContext('2d');
+                if (ctx) {
+                    discoveryChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'New Torrents',
+                                data: rates,
+                                fill: true,
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                borderColor: 'rgb(54, 162, 235)',
+                                tension: 0.3,
+                                borderWidth: 3,
+                                pointRadius: 2
+                            }]
+                        },
+                        options: {
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { grid: { color: gridColor }, beginAtZero: true, ticks: { font: { family: 'monospace' } } },
+                                x: { grid: { display: false }, ticks: { font: { family: 'monospace' }, maxRotation: 45, minRotation: 45 } }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        function updateCategoryChart(labels, values, colors) {
+            if (categoryChart) {
+                categoryChart.data.labels = labels;
+                categoryChart.data.datasets[0].data = values;
+                categoryChart.update();
+            } else {
+                const ctx = document.getElementById('categoryChart')?.getContext('2d');
+                if (ctx) {
+                    categoryChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: colors,
+                                borderWidth: 0,
+                                hoverOffset: 15
+                            }]
+                        },
+                        options: {
+                            cutout: '65%',
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { padding: 20, usePointStyle: true, font: { size: 11 } }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // Initial load
+        refreshStats();
+        refreshCategories();
+
+        // Periodic refresh (every minute)
+        setInterval(refreshStats, 60000);
+        setInterval(refreshCategories, 60000);
+
+        document.getElementById('granularitySelector').addEventListener('change', function() {
+            discoveryChart?.destroy();
+            discoveryChart = null;
+            refreshStats();
+        });
+    });
+</script>
 {{ end }}

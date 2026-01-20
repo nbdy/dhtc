@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"dhtc/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +10,7 @@ import (
 func (c *Controller) BlacklistGet(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "blacklist", gin.H{
 		"path":    ctx.FullPath(),
-		"results": db.GetBlacklistEntries(c.Database),
+		"results": c.Database.GetBlacklistEntries(),
 	})
 }
 
@@ -19,9 +18,9 @@ func (c *Controller) BlacklistPost(ctx *gin.Context) {
 	opOk := false
 	op := ctx.PostForm("op")
 	if op == "add" {
-		opOk = db.AddToBlacklist(c.Database, []string{ctx.PostForm("Filter")}, ctx.PostForm("Type"))
+		opOk = c.Database.AddToBlacklist([]string{ctx.PostForm("Filter")}, ctx.PostForm("Type"))
 	} else if op == "delete" {
-		opOk = db.DeleteBlacklistItem(c.Database, ctx.PostForm("Id"))
+		opOk = c.Database.DeleteBlacklistItem(ctx.PostForm("Id")) == nil
 	} else if op == "enable" {
 		c.Configuration.EnableBlacklist = true
 		opOk = true
@@ -36,6 +35,6 @@ func (c *Controller) BlacklistPost(ctx *gin.Context) {
 		"path":    ctx.FullPath(),
 		"op":      op,
 		"opOk":    opOk,
-		"results": db.GetBlacklistEntries(c.Database),
+		"results": c.Database.GetBlacklistEntries(),
 	})
 }

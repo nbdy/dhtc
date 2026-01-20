@@ -1,0 +1,63 @@
+{{ define "settings" }}
+{{ template "base" .}}
+{{ end }}
+
+{{ define "body" }}
+<div class="container mx-auto p-4 md:p-8">
+    <div class="mb-8">
+        <h1 class="text-4xl font-extrabold tracking-tight">Settings</h1>
+        <p class="text-base-content/60">Configure your personal preferences</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="card bg-base-100 shadow-xl border border-base-300">
+            <div class="card-body">
+                <h2 class="card-title">Appearance</h2>
+                <div class="form-control w-full max-w-xs">
+                    <label class="label">
+                        <span class="label-text">Theme</span>
+                    </label>
+                    <select class="select select-bordered pr-10" onchange="document.documentElement.setAttribute('data-theme', this.value); localStorage.setItem('theme', this.value);">
+                        <option disabled selected>Pick a theme</option>
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                        <option value="cupcake">Cupcake</option>
+                        <option value="bumblebee">Bumblebee</option>
+                        <option value="emerald">Emerald</option>
+                        <option value="corporate">Corporate</option>
+                        <option value="synthwave">Synthwave</option>
+                        <option value="retro">Retro</option>
+                        <option value="cyberpunk">Cyberpunk</option>
+                        <option value="valentine">Valentine</option>
+                        <option value="halloween">Halloween</option>
+                        <option value="garden">Garden</option>
+                        <option value="forest">Forest</option>
+                        <option value="aqua">Aqua</option>
+                        <option value="lofi">Lofi</option>
+                        <option value="pastel">Pastel</option>
+                        <option value="fantasy">Fantasy</option>
+                        <option value="wireframe">Wireframe</option>
+                        <option value="black">Black</option>
+                        <option value="luxury">Luxury</option>
+                        <option value="dracula">Dracula</option>
+                        <option value="cmyk">CMYK</option>
+                        <option value="autumn">Autumn</option>
+                        <option value="business">Business</option>
+                        <option value="acid">Acid</option>
+                        <option value="lemonade">Lemonade</option>
+                        <option value="night">Night</option>
+                        <option value="coffee">Coffee</option>
+                        <option value="winter">Winter</option>
+                        <option value="dim">Dim</option>
+                        <option value="nord">Nord</option>
+                        <option value="sunset">Sunset</option>
+                        <option value="caramellatte">Caramellatte</option>
+                        <option value="abyss">Abyss</option>
+                        <option value="silk">Silk</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}

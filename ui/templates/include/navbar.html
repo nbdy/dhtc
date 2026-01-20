@@ -1,22 +1,39 @@
 {{ define "navbar" }}
-<div class="container">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">dhtc</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="/dashboard">dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/search">search</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/discover">discover</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/watches">watches</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/blacklist">blacklist</a></li>
-                </ul>
-            </div>
+<div class="navbar bg-base-100 shadow-lg sticky top-0 z-50">
+    <div class="navbar-start">
+        <div class="dropdown">
+            <label tabindex="0" class="btn btn-ghost lg:hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+            </label>
+            <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/search">Search</a></li>
+                <li><a href="/discover">Discover</a></li>
+                <li><a href="/watches">Watches</a></li>
+                <li><a href="/blacklist">Blacklist</a></li>
+                <li><a href="/trawl">Trawl</a></li>
+                <li><a href="/settings">Settings</a></li>
+            </ul>
         </div>
-    </nav>
+        <a class="btn btn-ghost normal-case text-xl" href="/">dhtc</a>
+    </div>
+    <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1 gap-1">
+            <li><a href="/dashboard" class="{{ if eq .path "/dashboard" }}active{{ end }}">Dashboard</a></li>
+            <li><a href="/search" class="{{ if eq .path "/search" }}active{{ end }}">Search</a></li>
+            <li><a href="/discover" class="{{ if eq .path "/discover" }}active{{ end }}">Discover</a></li>
+            <li><a href="/watches" class="{{ if eq .path "/watches" }}active{{ end }}">Watches</a></li>
+            <li><a href="/blacklist" class="{{ if eq .path "/blacklist" }}active{{ end }}">Blacklist</a></li>
+            <li><a href="/trawl" class="{{ if eq .path "/trawl" }}active{{ end }}">Trawl</a></li>
+        </ul>
+    </div>
+    <div class="navbar-end">
+        <a href="/settings" class="btn btn-ghost btn-circle" title="Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </a>
+    </div>
 </div>
 {{ end }}

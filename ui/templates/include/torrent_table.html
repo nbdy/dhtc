@@ -1,24 +1,90 @@
 {{define "torrent_table"}}
 {{if .results}}
-<table class="table table-striped table-responsive table-bordered sortable">
-    <thead>
-    <tr>
-        <th>Name</th>
-        <th>Total size</th>
-        <th>File count</th>
-        <th>First seen</th>
-        <th>Action</th>
-    </tr>
-    </thead>
-    {{range.results}}
-    <tr>
-        <td style="word-break: break-word">{{ .Name }}</td>
-        <td data-sort="{{ .TotalSize }}" >{{ .TotalSize | filesizeformat }}</td>
-        <td>{{ .Files | length }}</td>
-        <td>{{ .DiscoveredOn }}</td>
-        <td><a href="magnet:?xt=urn:btih:{{ .InfoHash }}&amp;dn={{ .Name }}" type="button" class="btn btn-outline-info">Open</a></td>
-    </tr>
-    {{end}}
-</table>
+<div class="card bg-base-100 shadow-xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="table table-zebra w-full sortable">
+            <thead>
+            <tr class="bg-base-300">
+                <th>Name</th>
+                <th class="hidden md:table-cell">Tags</th>
+                <th>Total size</th>
+                <th class="hidden lg:table-cell">File count</th>
+                <th class="hidden sm:table-cell">First seen</th>
+                <th class="text-right">Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range.results}}
+            <tr class="hover group">
+                <td class="whitespace-normal break-all">
+                    <div class="collapse collapse-arrow bg-base-200/50 hover:bg-base-200 transition-colors">
+                        <input type="checkbox" />
+                        <div class="collapse-title p-2 min-h-0 flex items-center pr-10 font-medium">
+                            {{ .Name }}
+                        </div>
+                        <div class="collapse-content p-2">
+                            <div class="mt-2 rounded-lg overflow-x-auto border border-base-300">
+                                <table class="table table-xs w-full sortable">
+                                    <thead>
+                                    <tr class="bg-base-300">
+                                        <th>Path</th>
+                                        <th class="text-right">Size</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {{range .Files}}
+                                    <tr>
+                                        <td class="whitespace-normal break-all opacity-80">{{.Path}}</td>
+                                        <td data-sort="{{.Size}}" class="whitespace-nowrap text-right font-mono">{{.Size | filesizeformat}}</td>
+                                    </tr>
+                                    {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="hidden md:table-cell">
+                    <div class="flex flex-wrap gap-1">
+                        {{range .Categories}}
+                        <div class="badge badge-outline badge-sm">{{ . }}</div>
+                        {{end}}
+                    </div>
+                </td>
+                <td data-sort="{{ .TotalSize }}" class="font-mono whitespace-nowrap">{{ .TotalSize | filesizeformat }}</td>
+                <td class="hidden lg:table-cell text-center">{{ .Files | length }}</td>
+                <td class="hidden sm:table-cell whitespace-nowrap opacity-70">{{ .DiscoveredOn }}</td>
+                <td class="text-right">
+                    <div class="join join-vertical md:join-horizontal">
+                        <a href="magnet:?xt=urn:btih:{{ .InfoHash }}&amp;dn={{ .Name }}" class="btn btn-info btn-xs join-item" title="Open magnet link">Open</a>
+                        {{ if $.config.TransmissionURL }}
+                        <button class="btn btn-secondary btn-xs join-item" onclick="sendToDownloader('transmission', 'magnet:?xt=urn:btih:{{ .InfoHash }}&amp;dn={{ .Name }}')" title="Send to Transmission">T</button>
+                        {{ end }}
+                        {{ if $.config.Aria2URL }}
+                        <button class="btn btn-accent btn-xs join-item" onclick="sendToDownloader('aria2', 'magnet:?xt=urn:btih:{{ .InfoHash }}&amp;dn={{ .Name }}')" title="Send to Aria2">A</button>
+                        {{ end }}
+                        {{ if $.config.DelugeURL }}
+                        <button class="btn btn-primary btn-xs join-item" onclick="sendToDownloader('deluge', 'magnet:?xt=urn:btih:{{ .InfoHash }}&amp;dn={{ .Name }}')" title="Send to Deluge">D</button>
+                        {{ end }}
+                        {{ if $.config.QBittorrentURL }}
+                        <button class="btn btn-warning btn-xs join-item" onclick="sendToDownloader('qbittorrent', 'magnet:?xt=urn:btih:{{ .InfoHash }}&amp;dn={{ .Name }}')" title="Send to qBittorrent">Q</button>
+                        {{ end }}
+                    </div>
+                </td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{else}}
+<div class="hero bg-base-100 rounded-xl shadow-xl p-10 mt-8">
+    <div class="hero-content text-center">
+        <div class="max-w-md">
+            <h1 class="text-2xl font-bold">No results found</h1>
+            <p class="py-6">Try adjusting your search filters or check back later.</p>
+        </div>
+    </div>
+</div>
 {{end}}
 {{end}}

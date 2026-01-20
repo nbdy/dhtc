@@ -1,5 +1,4 @@
 {{ define "search" }}
-{{ template "navbar" . }}
 {{ template "base" .}}
 {{ end }}
 
@@ -7,42 +6,99 @@
 <script src="/js/sortable.min.js"></script>
 {{ end }}
 
-{{ define "extra_css" }}
-<link href="/css/sortable.min.css" rel="stylesheet">
-{{ end }}
+{{ define "extra_css" }}{{ end }}
 
 {{ define "body" }}
-<div class="container">
-    &nbsp;
-    <form class="row row-cols-auto g-2" action="/search" method="post">
-        <div class="col-2">
-            <select class="form-select" aria-label="Key" name="key">
-                <option value="Name" selected>Name</option>
-                <option value="InfoHash">Info hash</option>
-                <option value="Files">File name</option>
-                <option value="DiscoveredOn">Date</option>
-            </select>
-        </div>
+<div class="container mx-auto p-4 md:p-8">
+    <div class="mb-8">
+        <h1 class="text-4xl font-extrabold tracking-tight">Search</h1>
+        <p class="text-base-content/60">Search through the collected torrent metadata</p>
+    </div>
 
-        <div class="col-2">
-            <select class="form-select col-12" aria-label="MatchType" name="match-type">
-                <option value="contains" selected>contains</option>
-                <option value="equals">equals</option>
-                <option value="startswith">starts with</option>
-                <option value="endswith">ends with</option>
-            </select>
-        </div>
+    <div class="card bg-base-100 shadow-xl border border-base-300 mb-8">
+        <div class="card-body p-4 sm:p-6">
+            <form action="/search" method="post">
+                <div class="flex flex-col lg:flex-row gap-4 items-end mb-4">
+                    <div class="form-control w-full lg:w-48">
+                        <label class="label pt-0">
+                            <span class="label-text font-semibold">Field</span>
+                        </label>
+                        <select class="select select-bordered select-sm w-full pr-10" name="key">
+                            <option value="All" {{ if eq .key "All" }}selected{{ end }}>All</option>
+                            <option value="Name" {{ if eq .key "Name" }}selected{{ end }}>Name</option>
+                            <option value="InfoHash" {{ if eq .key "InfoHash" }}selected{{ end }}>Info hash</option>
+                            <option value="Files" {{ if eq .key "Files" }}selected{{ end }}>File name</option>
+                            <option value="DiscoveredOn" {{ if eq .key "DiscoveredOn" }}selected{{ end }}>Date</option>
+                        </select>
+                    </div>
 
-        <div class="col-6">
-            <input type="text" class="form-control col-12" aria-label="Search input" name="search-input">
-        </div>
+                    <div class="form-control w-full lg:w-48">
+                        <label class="label pt-0">
+                            <span class="label-text font-semibold">Match Type</span>
+                        </label>
+                        <select class="select select-bordered select-sm w-full pr-10" name="match-type">
+                            <option value="contains" {{ if eq .matchType "contains" }}selected{{ end }}>contains</option>
+                            <option value="equals" {{ if eq .matchType "equals" }}selected{{ end }}>equals</option>
+                            <option value="startswith" {{ if eq .matchType "startswith" }}selected{{ end }}>starts with</option>
+                            <option value="endswith" {{ if eq .matchType "endswith" }}selected{{ end }}>ends with</option>
+                        </select>
+                    </div>
 
-        <div class="col-2">
-            <button class="btn btn-primary" type="submit">Search!</button>
-        </div>
-    </form>
-&nbsp;
+                    <div class="form-control flex-grow w-full">
+                        <label class="label pt-0">
+                            <span class="label-text font-semibold">Search Query</span>
+                        </label>
+                        <div class="join w-full">
+                            <input type="text" placeholder="Search..." class="input input-bordered input-sm join-item w-full" name="search-input" value="{{.searchInput}}" />
+                            <button class="btn btn-primary btn-sm join-item px-6" type="submit">Search</button>
+                        </div>
+                    </div>
+                </div>
 
-    {{ template "torrent_table" . }}
+                <div class="collapse collapse-plus bg-base-200/30 border border-base-300 rounded-lg">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-sm font-medium py-2 min-h-0">
+                        Advanced Filters
+                    </div>
+                    <div class="collapse-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text text-xs">Min Size (bytes)</span>
+                                </label>
+                                <input type="number" name="min-size" class="input input-bordered input-sm" value="{{.minSize}}" />
+                            </div>
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text text-xs">Max Size (bytes)</span>
+                                </label>
+                                <input type="number" name="max-size" class="input input-bordered input-sm" value="{{.maxSize}}" />
+                            </div>
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text text-xs">Start Date</span>
+                                </label>
+                                <input type="date" name="start-date-val" class="input input-bordered input-sm" value="{{.startDateVal}}" />
+                            </div>
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text text-xs">End Date</span>
+                                </label>
+                                <input type="date" name="end-date-val" class="input input-bordered input-sm" value="{{.endDateVal}}" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{ if .results }}
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Results ({{ .total }})</h2>
+        </div>
+        {{ template "torrent_table" . }}
+        {{ template "pagination" . }}
+    {{ end }}
 </div>
 {{ end }}

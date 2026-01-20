@@ -1,0 +1,26 @@
+{
+  "name": "dhtc",
+  "version": "1.0.0",
+  "description": "[![](http://github-actions.40ants.com/nbdy/dhtc/matrix.svg?only=build)](https://github.com/nbdy/dhtc)",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "./tailwindcss-linux-x64 -i ./ui/static/css/input.css -o ./ui/static/css/style.css --minify",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nbdy/dhtc.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nbdy/dhtc/issues"
+  },
+  "homepage": "https://github.com/nbdy/dhtc#readme",
+  "devDependencies": {
+    "daisyui": "^5.5.14",
+    "tailwindcss": "^4.1.18"
+  }
+}

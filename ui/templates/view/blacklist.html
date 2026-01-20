@@ -1,84 +1,96 @@
 {{ define "blacklist" }}
-{{ template "navbar" . }}
 {{ template "base" .}}
 {{ end }}
 
 {{ define "body" }}
-<div class="container">
+<div class="container mx-auto p-4 md:p-8">
     {{ if .op }}
-    &nbsp;
-    {{ if eq .op "add" }}
-    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
-        {{ if .opOk }}Blacklist entry added successfully.{{ else if not .opOk }}Could not add blacklist entry.{{ end }}
-    </div>
-    {{ else if eq .op "delete" }}
-    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
-        {{ if .opOk }}Blacklist entry deleted successfully.{{ else if not .opOk }}Could not delete blacklist entry.{{ end }}
-    </div>
-    {{ else if eq .op "enable" }}
-    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
-        {{ if .opOk }}Enabled blacklist.{{ else if not .opOk }}Could not enable blacklist.{{ end }}
-    </div>
-    {{ else if eq .op "disable" }}
-    <div class="alert {{ if .opOk }}alert-success{{ else if not .opOk }}alert-danger{{ end }}" role="alert">
-        {{ if .opOk }}Disabled blacklist.{{ else if not .opOk }}Could not disable blacklist.{{ end }}
-    </div>
+        <div class="alert {{ if .opOk }}alert-success{{ else }}alert-error{{ end }} shadow-lg mb-8">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>
+                {{ if eq .op "add" }}
+                    {{ if .opOk }}Blacklist entry added successfully.{{ else }}Could not add blacklist entry.{{ end }}
+                {{ else if eq .op "delete" }}
+                    {{ if .opOk }}Blacklist entry deleted successfully.{{ else }}Could not delete blacklist entry.{{ end }}
+                {{ end }}
+            </span>
+        </div>
     {{ end }}
-    {{ end }}
-    &nbsp;
 
-    <form action="/blacklist" method="post">
-        <div class="row row-cols-auto g-2">
-            <input type="hidden" name="op" value="add">
+    <div class="mb-8">
+        <h1 class="text-4xl font-extrabold tracking-tight">Blacklist</h1>
+        <p class="text-base-content/60">Define regex filters to ignore unwanted torrents or files</p>
+    </div>
 
-            <div class="col-8">
-                <div class="input-group">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text">Regex:</span>
+    <div class="card bg-base-100 shadow-xl border border-base-300 mb-8">
+        <div class="card-body p-4 sm:p-6">
+            <h2 class="card-title text-lg mb-4">Add New Filter</h2>
+            <form action="/blacklist" method="post">
+                <input type="hidden" name="op" value="add">
+                <div class="flex flex-col lg:flex-row gap-4 items-end">
+                    <div class="form-control flex-grow w-full">
+                        <label class="label pt-0">
+                            <span class="label-text font-semibold text-xs">Regex Filter</span>
+                        </label>
+                        <input type="text" placeholder="Regex (e.g. .*spam.*)" class="input input-bordered input-sm w-full" name="Filter" required />
                     </div>
-                    <input type="text" class="form-control" name="Filter" required>
+
+                    <div class="form-control w-full lg:w-48">
+                        <label class="label pt-0">
+                            <span class="label-text font-semibold text-xs">Type</span>
+                        </label>
+                        <select class="select select-bordered select-sm w-full pr-10" name="Type">
+                            <option value="0" selected>Name</option>
+                            <option value="1">File name</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary btn-sm px-6" type="submit">Add to Blacklist</button>
                 </div>
-            </div>
+            </form>
+        </div>
+    </div>
 
-            <div class="col-2">
-                <select class="form-select" aria-label="MatchType" name="Type">
-                    <option value="0" selected>Name</option>
-                    <option value="1">File name</option>
-                </select>
-            </div>
-
-            <div class="col-2">
-                <button class="btn btn-primary mb-2" type="submit">Add</button>
+    {{ if .results }}
+    <div class="card bg-base-100 shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+                <thead>
+                <tr class="bg-base-300">
+                    <th class="w-16">#</th>
+                    <th>Filter</th>
+                    <th>Type</th>
+                    <th class="text-right">Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range $index, $item := .results }}
+                <tr class="hover">
+                    <td class="font-mono text-xs opacity-50">{{ $index }}</td>
+                    <td class="whitespace-normal break-all font-mono text-sm">{{ $item.Filter }}</td>
+                    <td><div class="badge badge-outline badge-sm">{{ $item.Type }}</div></td>
+                    <td class="text-right">
+                        <form id="{{ $index }}-delete" action="/blacklist" method="post" class="inline">
+                            <input type="hidden" name="op" value="delete">
+                            <input type="hidden" name="Id" value="{{ $item.Id }}">
+                            <button class="btn btn-error btn-ghost btn-xs" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{ else }}
+    <div class="hero bg-base-100 rounded-xl shadow-xl p-10 mt-8">
+        <div class="hero-content text-center">
+            <div class="max-w-md">
+                <h1 class="text-2xl font-bold">Blacklist is empty</h1>
+                <p class="py-6 text-base-content/60">Add filters to automatically skip torrents or files that match specific patterns.</p>
             </div>
         </div>
-    </form>
-
-    &nbsp;
-    {{ if .results }}
-    <table class="table table-striped table-responsive table-bordered">
-        <thead>
-        <tr class="d-flex">
-            <th class="col-1">#</th>
-            <th class="col-8">Filter</th>
-            <th class="col-2">Type</th>
-            <th class="col-1"></th>
-        </tr>
-        </thead>
-        {{ range $index, $item := .results }}
-        <tr class="d-flex">
-            <td class="col-1">{{ $index }}</td>
-            <td class="col-8">{{ $item.Filter }}</td>
-            <td class="col-2">{{ $item.Type }}</td>
-            <td class="col-1">
-                <form id="{{ $index }}-delete" action="/blacklist" method="post">
-                    <input type="hidden" name="op" value="delete">
-                    <input type="hidden" name="Id" value="{{ $item.Id }}">
-                    <button class="btn btn-outline-danger" type="submit">Delete</button>
-                </form>
-            </td>
-        </tr>
-        {{ end }}
-    </table>
+    </div>
     {{ end }}
 </div>
 {{ end }}
