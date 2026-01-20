@@ -3,28 +3,26 @@ package cache
 import (
 	"dhtc/db"
 	"encoding/hex"
-	"fmt"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/ostafen/clover/v2"
-	"github.com/ostafen/clover/v2/query"
 	"github.com/rs/zerolog/log"
 )
 
-var InfoHashCache = mapset.NewSet[[20]byte]()
+var InfoHashCache = mapset.NewSet[string]()
 
-func PopulateInfoHashCacheFromDatabase(database *clover.DB) {
-	all, _ := database.FindAll(query.NewQuery(db.TorrentTable))
-	for _, d := range all {
-		ih := d.Get("InfoHash").(string)
+func PopulateInfoHashCacheFromDatabase(database db.Repository) {
+	all, err := database.GetAllInfoHashes()
+	if err != nil {
+		log.Error().Err(err).Msg("could not get all info hashes from database")
+		return
+	}
+	for _, ih := range all {
 		h, err := hex.DecodeString(ih)
-		if len(h) != 20 || err != nil {
-			fmt.Print("x")
+		if err != nil {
 			continue
 		}
-		h20 := (*[20]byte)(h)
-		InfoHashCache.Add(*h20)
+		InfoHashCache.Add(string(h))
 	}
 
-	log.Debug().Msgf("info hash cache size %d elements\n", InfoHashCache.Cardinality())
+	log.Debug().Msgf("info hash cache size %d elements", InfoHashCache.Cardinality())
 }
