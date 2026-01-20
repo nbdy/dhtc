@@ -90,6 +90,7 @@ func RunWebServer(configuration *config.Configuration, database db.Repository, h
 	srv.GET("/blacklist", uiCtrl.BlacklistGet)
 	srv.POST("/blacklist", uiCtrl.BlacklistPost)
 	srv.GET("/settings", uiCtrl.SettingsGet)
+	srv.POST("/settings", uiCtrl.SettingsPost)
 	srv.GET("/trawl", uiCtrl.Trawl)
 	srv.GET("/ws/trawl", func(c *gin.Context) {
 		uiCtrl.HandleWebSocket(c.Writer, c.Request)

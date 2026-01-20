@@ -10,8 +10,8 @@ type Configuration struct {
 	DatabaseType string
 	DatabaseUrl  string
 	Address      string
-	MaxNeighbors uint
-	MaxLeeches   int
+	MaxNeighbors uint `form:"MaxNeighbors"`
+	MaxLeeches   int  `form:"MaxLeeches"`
 	DrainTimeout time.Duration
 
 	TelegramToken    string
@@ -26,9 +26,9 @@ type Configuration struct {
 
 	SafeMode bool
 
-	CrawlerThreads         int
-	MaxConcurrentDownloads int
-	RateLimit              int
+	CrawlerThreads         int `form:"CrawlerThreads"`
+	MaxConcurrentDownloads int `form:"MaxConcurrentDownloads"`
+	RateLimit              int `form:"RateLimit"`
 
 	EnableBlacklist bool
 	NameBlacklist   string

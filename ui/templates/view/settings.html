@@ -9,6 +9,23 @@
         <p class="text-base-content/60">Configure your personal preferences</p>
     </div>
 
+    {{ if .saved }}
+    <div class="alert alert-success shadow-lg mb-8">
+        <div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>Settings saved successfully! (Note: Some changes may require a restart to take effect)</span>
+        </div>
+    </div>
+    {{ end }}
+
+    {{ if .error }}
+    <div class="alert alert-error shadow-lg mb-8">
+        <div>
+            <span>{{ .error }}</span>
+        </div>
+    </div>
+    {{ end }}
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="card bg-base-100 shadow-xl border border-base-300">
             <div class="card-body">
@@ -56,6 +73,47 @@
                         <option value="silk">Silk</option>
                     </select>
                 </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl border border-base-300">
+            <div class="card-body">
+                <h2 class="card-title">Crawler</h2>
+                <form action="/settings" method="POST">
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Max. Leeches</span>
+                        </label>
+                        <input type="number" name="MaxLeeches" value="{{ .config.MaxLeeches }}" class="input input-bordered w-full" />
+                    </div>
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Max. Neighbors</span>
+                        </label>
+                        <input type="number" name="MaxNeighbors" value="{{ .config.MaxNeighbors }}" class="input input-bordered w-full" />
+                    </div>
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Crawler Threads</span>
+                        </label>
+                        <input type="number" name="CrawlerThreads" value="{{ .config.CrawlerThreads }}" class="input input-bordered w-full" />
+                    </div>
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Max. Concurrent Downloads</span>
+                        </label>
+                        <input type="number" name="MaxConcurrentDownloads" value="{{ .config.MaxConcurrentDownloads }}" class="input input-bordered w-full" />
+                    </div>
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Rate Limit</span>
+                        </label>
+                        <input type="number" name="RateLimit" value="{{ .config.RateLimit }}" class="input input-bordered w-full" />
+                    </div>
+                    <div class="card-actions justify-end mt-4">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
