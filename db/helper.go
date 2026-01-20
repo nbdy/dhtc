@@ -8,12 +8,32 @@ import (
 )
 
 func Document2MetaData(value *document.Document) MetaData {
+	var categories []string
+	if value.Has("Categories") {
+		switch v := value.Get("Categories").(type) {
+		case []string:
+			categories = v
+		case []interface{}:
+			for _, item := range v {
+				if s, ok := item.(string); ok {
+					categories = append(categories, s)
+				}
+			}
+		case string:
+			categories = strings.Split(v, ",")
+		}
+	} else if value.Has("Category") {
+		// Migration path from old "Category" field
+		categories = []string{value.Get("Category").(string)}
+	}
+
 	return MetaData{
 		value.Get("Name").(string),
 		value.Get("InfoHash").(string),
 		time.Unix(value.Get("DiscoveredOn").(int64), 0).Format(time.RFC822),
 		value.Get("TotalSize").(uint64),
 		value.Get("Files").([]interface{}),
+		categories,
 	}
 }
 
@@ -46,7 +66,7 @@ func HasMatchingFile(fileList []interface{}, searchType string, searchInput stri
 	rVal := false
 	for _, item := range fileList {
 		for key, value := range item.(map[string]interface{}) {
-			if key == "path" {
+			if key == "Path" {
 				rVal = MatchString(searchType, value.(string), searchInput)
 			}
 		}
@@ -65,6 +85,12 @@ func FoundOnDate(date time.Time, searchInput string) bool {
 }
 
 func Matches(doc *document.Document, key string, searchType string, searchInput string) bool {
+	if key == "All" {
+		return Matches(doc, "Name", searchType, searchInput) || Matches(doc, "Files", searchType, searchInput)
+	}
+	if key == "Path" {
+		key = "Files"
+	}
 	rVal := doc.Has(key)
 	if rVal {
 		value := doc.Get(key)
@@ -72,7 +98,7 @@ func Matches(doc *document.Document, key string, searchType string, searchInput 
 		if key == "Files" {
 			rVal = HasMatchingFile(value.([]interface{}), searchType, searchInput)
 		} else if key == "DiscoveredOn" {
-			rVal = FoundOnDate(time.Unix(int64(value.(float64)), 0), searchInput)
+			rVal = FoundOnDate(time.Unix(value.(int64), 0), searchInput)
 		} else {
 			rVal = MatchString(searchType, value.(string), searchInput)
 		}
