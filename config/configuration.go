@@ -10,52 +10,52 @@ type Configuration struct {
 	DatabaseType string
 	DatabaseUrl  string
 	Address      string
-	MaxNeighbors uint `form:"MaxNeighbors"`
-	MaxLeeches   int  `form:"MaxLeeches"`
-	DrainTimeout time.Duration
+	MaxNeighbors uint          `form:"MaxNeighbors"`
+	MaxLeeches   int           `form:"MaxLeeches"`
+	DrainTimeout time.Duration `form:"DrainTimeout"`
 
-	TelegramToken    string
-	TelegramUsername string
+	TelegramToken    string `form:"TelegramToken"`
+	TelegramUsername string `form:"TelegramUsername"`
 
-	DiscordWebhook string
+	DiscordWebhook string `form:"DiscordWebhook"`
 
-	SlackWebhook string
+	SlackWebhook string `form:"SlackWebhook"`
 
-	GotifyURL   string
-	GotifyToken string
+	GotifyURL   string `form:"GotifyURL"`
+	GotifyToken string `form:"GotifyToken"`
 
-	SafeMode bool
+	SafeMode bool `form:"SafeMode"`
 
 	CrawlerThreads         int `form:"CrawlerThreads"`
 	MaxConcurrentDownloads int `form:"MaxConcurrentDownloads"`
 	RateLimit              int `form:"RateLimit"`
 
-	EnableBlacklist bool
-	NameBlacklist   string
-	FileBlacklist   string
+	EnableBlacklist bool   `form:"EnableBlacklist"`
+	NameBlacklist   string `form:"NameBlacklist"`
+	FileBlacklist   string `form:"FileBlacklist"`
 
-	Statistics bool
+	Statistics bool `form:"Statistics"`
 
-	BootstrapNodeFile string
+	BootstrapNodeFile string `form:"BootstrapNodeFile"`
 
 	OnlyWebServer bool
 	AuthUser      string
 	AuthPass      string
 	SessionSecret string
 
-	TransmissionURL  string
-	TransmissionUser string
-	TransmissionPass string
+	TransmissionURL  string `form:"TransmissionURL"`
+	TransmissionUser string `form:"TransmissionUser"`
+	TransmissionPass string `form:"TransmissionPass"`
 
-	Aria2URL   string
-	Aria2Token string
+	Aria2URL   string `form:"Aria2URL"`
+	Aria2Token string `form:"Aria2Token"`
 
-	DelugeURL  string
-	DelugePass string
+	DelugeURL  string `form:"DelugeURL"`
+	DelugePass string `form:"DelugePass"`
 
-	QBittorrentURL  string
-	QBittorrentUser string
-	QBittorrentPass string
+	QBittorrentURL  string `form:"QBittorrentURL"`
+	QBittorrentUser string `form:"QBittorrentUser"`
+	QBittorrentPass string `form:"QBittorrentPass"`
 }
 
 func ParseArguments() *Configuration {

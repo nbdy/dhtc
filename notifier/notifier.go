@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"dhtc/config"
+	"sync"
 )
 
 type Notifier interface {
@@ -10,16 +11,21 @@ type Notifier interface {
 
 type Manager struct {
 	notifiers []Notifier
+	mu        sync.RWMutex
 }
 
 func (m *Manager) Notify(message string) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	for _, n := range m.notifiers {
 		_ = n.Notify(message)
 	}
 }
 
-func SetupNotifiers(cfg *config.Configuration) *Manager {
-	m := &Manager{}
+func (m *Manager) Setup(cfg *config.Configuration) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.notifiers = nil
 
 	if cfg.TelegramToken != "" {
 		bot := SetupTelegramBot(cfg)
@@ -49,6 +55,10 @@ func SetupNotifiers(cfg *config.Configuration) *Manager {
 			Token: cfg.GotifyToken,
 		})
 	}
+}
 
+func SetupNotifiers(cfg *config.Configuration) *Manager {
+	m := &Manager{}
+	m.Setup(cfg)
 	return m
 }
