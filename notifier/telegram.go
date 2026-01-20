@@ -39,3 +39,13 @@ func NotifyTelegram(config *config.Configuration, bot *telegram.Bot, message str
 		}
 	}
 }
+
+type TelegramNotifier struct {
+	config *config.Configuration
+	bot    *telegram.Bot
+}
+
+func (n *TelegramNotifier) Notify(message string) error {
+	NotifyTelegram(n.config, n.bot, message)
+	return nil
+}
