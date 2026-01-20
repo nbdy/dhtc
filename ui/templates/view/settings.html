@@ -6,12 +6,12 @@
 <div class="container mx-auto p-4 md:p-8">
     <div class="mb-8">
         <h1 class="text-4xl font-extrabold tracking-tight">Settings</h1>
-        <p class="text-base-content/60">Configure your personal preferences</p>
+        <p class="text-base-content/60">Configure your personal preferences and system behavior</p>
     </div>
 
     {{ if .saved }}
     <div class="alert alert-success shadow-lg mb-8">
-        <div>
+        <div class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span>Settings saved successfully! (Note: Some changes may require a restart to take effect)</span>
         </div>
@@ -20,21 +20,26 @@
 
     {{ if .error }}
     <div class="alert alert-error shadow-lg mb-8">
-        <div>
+        <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span>{{ .error }}</span>
         </div>
     </div>
     {{ end }}
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Appearance Card (Independent of Form) -->
         <div class="card bg-base-100 shadow-xl border border-base-300">
             <div class="card-body">
-                <h2 class="card-title">Appearance</h2>
+                <div class="flex items-center gap-2 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                    <h2 class="card-title text-2xl">Appearance</h2>
+                </div>
                 <div class="form-control w-full max-w-xs">
                     <label class="label">
-                        <span class="label-text">Theme</span>
+                        <span class="label-text font-semibold">Interface Theme</span>
                     </label>
-                    <select class="select select-bordered pr-10" onchange="document.documentElement.setAttribute('data-theme', this.value); localStorage.setItem('theme', this.value);">
+                    <select class="select select-bordered w-full" onchange="document.documentElement.setAttribute('data-theme', this.value); localStorage.setItem('theme', this.value);">
                         <option disabled selected>Pick a theme</option>
                         <option value="dark">Dark</option>
                         <option value="light">Light</option>
@@ -72,50 +77,276 @@
                         <option value="abyss">Abyss</option>
                         <option value="silk">Silk</option>
                     </select>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/50">Personalize the look of your dashboard</span>
+                    </label>
                 </div>
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-xl border border-base-300">
-            <div class="card-body">
-                <h2 class="card-title">Crawler</h2>
-                <form action="/settings" method="POST">
-                    <div class="form-control w-full">
-                        <label class="label">
-                            <span class="label-text">Max. Leeches</span>
-                        </label>
-                        <input type="number" name="MaxLeeches" value="{{ .config.MaxLeeches }}" class="input input-bordered w-full" />
+        <form action="/settings" method="POST" class="contents">
+            <!-- General Settings -->
+            <div class="card bg-base-100 shadow-xl border border-base-300">
+                <div class="card-body">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <h2 class="card-title text-2xl">General</h2>
                     </div>
-                    <div class="form-control w-full">
-                        <label class="label">
-                            <span class="label-text">Max. Neighbors</span>
-                        </label>
-                        <input type="number" name="MaxNeighbors" value="{{ .config.MaxNeighbors }}" class="input input-bordered w-full" />
+
+                    <div class="space-y-4">
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-4">
+                                <input type="checkbox" name="SafeMode" value="true" class="checkbox checkbox-primary" {{ if .config.SafeMode }}checked{{ end }} />
+                                <input type="hidden" name="SafeMode" value="false" />
+                                <span class="label-text font-semibold">Safe Mode</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-4">
+                                <input type="checkbox" name="Statistics" value="true" class="checkbox checkbox-primary" {{ if .config.Statistics }}checked{{ end }} />
+                                <input type="hidden" name="Statistics" value="false" />
+                                <span class="label-text font-semibold">Collect Statistics</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-4">
+                                <input type="checkbox" name="EnableBlacklist" value="true" class="checkbox checkbox-primary" {{ if .config.EnableBlacklist }}checked{{ end }} />
+                                <input type="hidden" name="EnableBlacklist" value="false" />
+                                <span class="label-text font-semibold">Enable Blacklisting</span>
+                            </label>
+                        </div>
+
+                        <div class="divider">Paths</div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Bootstrap Nodes File</span>
+                            </label>
+                            <input type="text" name="BootstrapNodeFile" value="{{ .config.BootstrapNodeFile }}" class="input input-bordered w-full" />
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Name Blacklist File</span>
+                            </label>
+                            <input type="text" name="NameBlacklist" value="{{ .config.NameBlacklist }}" class="input input-bordered w-full" />
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">File Blacklist File</span>
+                            </label>
+                            <input type="text" name="FileBlacklist" value="{{ .config.FileBlacklist }}" class="input input-bordered w-full" />
+                        </div>
                     </div>
-                    <div class="form-control w-full">
-                        <label class="label">
-                            <span class="label-text">Crawler Threads</span>
-                        </label>
-                        <input type="number" name="CrawlerThreads" value="{{ .config.CrawlerThreads }}" class="input input-bordered w-full" />
-                    </div>
-                    <div class="form-control w-full">
-                        <label class="label">
-                            <span class="label-text">Max. Concurrent Downloads</span>
-                        </label>
-                        <input type="number" name="MaxConcurrentDownloads" value="{{ .config.MaxConcurrentDownloads }}" class="input input-bordered w-full" />
-                    </div>
-                    <div class="form-control w-full">
-                        <label class="label">
-                            <span class="label-text">Rate Limit</span>
-                        </label>
-                        <input type="number" name="RateLimit" value="{{ .config.RateLimit }}" class="input input-bordered w-full" />
-                    </div>
-                    <div class="card-actions justify-end mt-4">
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
+
+            <!-- Crawler Settings -->
+            <div class="card bg-base-100 shadow-xl border border-base-300">
+                <div class="card-body">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <h2 class="card-title text-2xl">Crawler</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Crawler Threads</span>
+                            </label>
+                            <input type="number" name="CrawlerThreads" value="{{ .config.CrawlerThreads }}" class="input input-bordered w-full" />
+                        </div>
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Rate Limit</span>
+                            </label>
+                            <input type="number" name="RateLimit" value="{{ .config.RateLimit }}" class="input input-bordered w-full" />
+                        </div>
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Max. Neighbors</span>
+                            </label>
+                            <input type="number" name="MaxNeighbors" value="{{ .config.MaxNeighbors }}" class="input input-bordered w-full" />
+                        </div>
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Max. Leeches</span>
+                            </label>
+                            <input type="number" name="MaxLeeches" value="{{ .config.MaxLeeches }}" class="input input-bordered w-full" />
+                        </div>
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Max. Concurrent Downloads</span>
+                            </label>
+                            <input type="number" name="MaxConcurrentDownloads" value="{{ .config.MaxConcurrentDownloads }}" class="input input-bordered w-full" />
+                        </div>
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-semibold">Drain Timeout</span>
+                            </label>
+                            <input type="text" name="DrainTimeout" value="{{ .config.DrainTimeout }}" class="input input-bordered w-full" placeholder="e.g. 5s" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Downloaders Settings -->
+            <div class="card bg-base-100 shadow-xl border border-base-300">
+                <div class="card-body">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        <h2 class="card-title text-2xl">Downloaders</h2>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">Transmission</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">RPC URL</span></label>
+                                    <input type="text" name="TransmissionURL" value="{{ .config.TransmissionURL }}" placeholder="http://localhost:9091/transmission/rpc" class="input input-bordered w-full" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="form-control w-full">
+                                        <label class="label"><span class="label-text">Username</span></label>
+                                        <input type="text" name="TransmissionUser" value="{{ .config.TransmissionUser }}" class="input input-bordered w-full" />
+                                    </div>
+                                    <div class="form-control w-full">
+                                        <label class="label"><span class="label-text">Password</span></label>
+                                        <input type="password" name="TransmissionPass" value="{{ .config.TransmissionPass }}" class="input input-bordered w-full" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">Aria2</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">RPC URL</span></label>
+                                    <input type="text" name="Aria2URL" value="{{ .config.Aria2URL }}" placeholder="http://localhost:6800/jsonrpc" class="input input-bordered w-full" />
+                                </div>
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Secret Token</span></label>
+                                    <input type="password" name="Aria2Token" value="{{ .config.Aria2Token }}" class="input input-bordered w-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">Deluge</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">JSON-RPC URL</span></label>
+                                    <input type="text" name="DelugeURL" value="{{ .config.DelugeURL }}" placeholder="http://localhost:8112/json" class="input input-bordered w-full" />
+                                </div>
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Password</span></label>
+                                    <input type="password" name="DelugePass" value="{{ .config.DelugePass }}" class="input input-bordered w-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">qBittorrent</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Web UI URL</span></label>
+                                    <input type="text" name="QBittorrentURL" value="{{ .config.QBittorrentURL }}" placeholder="http://localhost:8080" class="input input-bordered w-full" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="form-control w-full">
+                                        <label class="label"><span class="label-text">Username</span></label>
+                                        <input type="text" name="QBittorrentUser" value="{{ .config.QBittorrentUser }}" class="input input-bordered w-full" />
+                                    </div>
+                                    <div class="form-control w-full">
+                                        <label class="label"><span class="label-text">Password</span></label>
+                                        <input type="password" name="QBittorrentPass" value="{{ .config.QBittorrentPass }}" class="input input-bordered w-full" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Settings -->
+            <div class="card bg-base-100 shadow-xl border border-base-300">
+                <div class="card-body">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        <h2 class="card-title text-2xl">Notifications</h2>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">Telegram</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Bot Token</span></label>
+                                    <input type="text" name="TelegramToken" value="{{ .config.TelegramToken }}" class="input input-bordered w-full" />
+                                </div>
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Target Username</span></label>
+                                    <input type="text" name="TelegramUsername" value="{{ .config.TelegramUsername }}" class="input input-bordered w-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">Discord</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Webhook URL</span></label>
+                                    <input type="text" name="DiscordWebhook" value="{{ .config.DiscordWebhook }}" class="input input-bordered w-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">Slack</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Webhook URL</span></label>
+                                    <input type="text" name="SlackWebhook" value="{{ .config.SlackWebhook }}" class="input input-bordered w-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+                            <input type="checkbox" />
+                            <div class="collapse-title font-bold">Gotify</div>
+                            <div class="collapse-content">
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">URL</span></label>
+                                    <input type="text" name="GotifyURL" value="{{ .config.GotifyURL }}" class="input input-bordered w-full" />
+                                </div>
+                                <div class="form-control w-full">
+                                    <label class="label"><span class="label-text">Token</span></label>
+                                    <input type="text" name="GotifyToken" value="{{ .config.GotifyToken }}" class="input input-bordered w-full" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Actions -->
+            <div class="md:col-span-2 flex justify-end gap-4 mt-4">
+                <button type="reset" class="btn btn-ghost btn-lg px-8">Reset Changes</button>
+                <button type="submit" class="btn btn-primary btn-lg px-8 shadow-lg">Save All Settings</button>
+            </div>
+        </form>
     </div>
 </div>
 {{ end }}
