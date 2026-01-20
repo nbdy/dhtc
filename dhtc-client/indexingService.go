@@ -1,6 +1,7 @@
 package dhtc_client
 
 import (
+	"container/list"
 	"crypto/rand"
 	"github.com/rs/zerolog/log"
 	"net"
@@ -17,11 +18,15 @@ type IndexingService struct {
 
 	nodeID            []byte
 	routingTable      map[string]*net.UDPAddr
+	lastSeen          map[string]time.Time
+	lruList           *list.List
+	lruElements       map[string]*list.Element
+	nodeBlacklist     map[string]time.Time
 	routingTableMutex sync.RWMutex
 	maxNeighbors      uint
 
 	counter          uint16
-	getPeersRequests map[[2]byte][20]byte // GetPeersQuery.`t` -> infohash
+	getPeersRequests map[[2]byte][]byte // GetPeersQuery.`t` -> infohash
 }
 
 type IndexingServiceEventHandlers struct {
@@ -29,11 +34,11 @@ type IndexingServiceEventHandlers struct {
 }
 
 type IndexingResult struct {
-	infoHash  [20]byte
+	infoHash  []byte
 	peerAddrs []net.TCPAddr
 }
 
-func (ir IndexingResult) InfoHash() [20]byte {
+func (ir IndexingResult) InfoHash() []byte {
 	return ir.infoHash
 }
 
@@ -41,23 +46,29 @@ func (ir IndexingResult) PeerAddrs() []net.TCPAddr {
 	return ir.peerAddrs
 }
 
-func NewIndexingService(laddr string, interval time.Duration, maxNeighbors uint, eventHandlers IndexingServiceEventHandlers) *IndexingService {
+func NewIndexingService(laddr string, interval time.Duration, maxNeighbors uint, rateLimit int, eventHandlers IndexingServiceEventHandlers) *IndexingService {
 	service := new(IndexingService)
 	service.interval = interval
 	service.protocol = NewProtocol(
 		laddr,
+		rateLimit,
 		ProtocolEventHandlers{
 			OnFindNodeResponse:         service.onFindNodeResponse,
 			OnGetPeersResponse:         service.onGetPeersResponse,
 			OnSampleInfohashesResponse: service.onSampleInfohashesResponse,
+			OnSampleInfohashesQuery:    service.onSampleInfohashesQuery,
 		},
 	)
 	service.nodeID = make([]byte, 20)
 	service.routingTable = make(map[string]*net.UDPAddr)
+	service.lastSeen = make(map[string]time.Time)
+	service.lruList = list.New()
+	service.lruElements = make(map[string]*list.Element)
+	service.nodeBlacklist = make(map[string]time.Time)
 	service.maxNeighbors = maxNeighbors
 	service.eventHandlers = eventHandlers
 
-	service.getPeersRequests = make(map[[2]byte][20]byte)
+	service.getPeersRequests = make(map[[2]byte][]byte)
 
 	return service
 }
@@ -77,16 +88,44 @@ func (is *IndexingService) Terminate() {
 }
 
 func (is *IndexingService) index(nodes []string) {
-	for range time.Tick(is.interval) {
+	ticker := time.NewTicker(is.interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
 		is.routingTableMutex.RLock()
 		routingTableLen := len(is.routingTable)
 		is.routingTableMutex.RUnlock()
+
 		if routingTableLen == 0 {
 			is.bootstrap(nodes)
 		} else {
 			is.findNeighbors()
+
+			// Prune dead nodes
 			is.routingTableMutex.Lock()
-			is.routingTable = make(map[string]*net.UDPAddr)
+			for {
+				back := is.lruList.Back()
+				if back == nil {
+					break
+				}
+				id := back.Value.(string)
+				seen := is.lastSeen[id]
+				if time.Since(seen) > 5*time.Minute {
+					is.lruList.Remove(back)
+					delete(is.lruElements, id)
+					delete(is.routingTable, id)
+					delete(is.lastSeen, id)
+				} else {
+					break
+				}
+			}
+
+			// Prune node blacklist (keep for 24 hours)
+			for ip, blacklistedAt := range is.nodeBlacklist {
+				if time.Since(blacklistedAt) > 24*time.Hour {
+					delete(is.nodeBlacklist, ip)
+				}
+			}
 			is.routingTableMutex.Unlock()
 		}
 	}
@@ -102,7 +141,7 @@ func (is *IndexingService) bootstrap(nodes []string) {
 
 		addr, err := net.ResolveUDPAddr("udp", node)
 		if err != nil {
-			log.Error().Msg("Could NOT resolve (UDP) address of the bootstrapping node!")
+			log.Error().Err(err).Str("node", node).Msg("Could NOT resolve (UDP) address of the bootstrapping node!")
 			continue
 		}
 
@@ -132,39 +171,87 @@ func (is *IndexingService) findNeighbors() {
 		}
 
 		is.protocol.SendMessage(
-			NewSampleInfoHashQuery(is.nodeID, []byte("aa"), target),
+			NewSampleInfohashesQuery(is.nodeID, []byte("aa"), target),
 			addr,
 		)
 	}
 }
 
-func (is *IndexingService) onFindNodeResponse(response *Message, addr *net.UDPAddr) {
+func (is *IndexingService) BlacklistNode(ip string) {
+	is.routingTableMutex.Lock()
+	defer is.routingTableMutex.Unlock()
+	is.nodeBlacklist[ip] = time.Now()
+
+	// Remove all nodes with this IP from routing table
+	for id, addr := range is.routingTable {
+		if addr.IP.String() == ip {
+			if element, ok := is.lruElements[id]; ok {
+				is.lruList.Remove(element)
+				delete(is.lruElements, id)
+			}
+			delete(is.routingTable, id)
+			delete(is.lastSeen, id)
+		}
+	}
+}
+
+func (is *IndexingService) addNode(id []byte, addr *net.UDPAddr) {
+	if addr.Port == 0 {
+		return
+	}
+
 	is.routingTableMutex.Lock()
 	defer is.routingTableMutex.Unlock()
 
+	saddr := addr.IP.String()
+	if _, blacklisted := is.nodeBlacklist[saddr]; blacklisted {
+		return
+	}
+
+	sid := string(id)
+	if _, exists := is.routingTable[sid]; exists {
+		is.lastSeen[sid] = time.Now()
+		is.lruList.MoveToFront(is.lruElements[sid])
+		return
+	}
+
+	if uint(len(is.routingTable)) >= is.maxNeighbors {
+		back := is.lruList.Back()
+		if back != nil {
+			oldestID := back.Value.(string)
+			is.lruList.Remove(back)
+			delete(is.lruElements, oldestID)
+			delete(is.routingTable, oldestID)
+			delete(is.lastSeen, oldestID)
+		}
+	}
+
+	is.routingTable[sid] = addr
+	is.lastSeen[sid] = time.Now()
+	is.lruElements[sid] = is.lruList.PushFront(sid)
+
+	target := make([]byte, 20)
+	_, err := rand.Read(target)
+	if err != nil {
+		log.Panic().Msg("Could NOT generate random bytes!")
+	}
+	is.protocol.SendMessage(
+		NewSampleInfohashesQuery(is.nodeID, []byte("aa"), target),
+		addr,
+	)
+}
+
+func (is *IndexingService) onFindNodeResponse(response *Message, addr *net.UDPAddr) {
+	is.addNode(response.R.ID, addr)
+
 	for _, node := range response.R.Nodes {
-		if uint(len(is.routingTable)) >= is.maxNeighbors {
-			break
-		}
-		if node.Addr.Port == 0 { // Ignore nodes who "use" port 0.
-			continue
-		}
-
-		is.routingTable[string(node.ID)] = &node.Addr
-
-		target := make([]byte, 20)
-		_, err := rand.Read(target)
-		if err != nil {
-			log.Panic().Msg("Could NOT generate random bytes!")
-		}
-		is.protocol.SendMessage(
-			NewSampleInfoHashQuery(is.nodeID, []byte("aa"), target),
-			&node.Addr,
-		)
+		is.addNode(node.ID, &node.Addr)
 	}
 }
 
 func (is *IndexingService) onGetPeersResponse(msg *Message, addr *net.UDPAddr) {
+	is.addNode(msg.R.ID, addr)
+
 	var t [2]byte
 	copy(t[:], msg.T)
 
@@ -200,53 +287,58 @@ func (is *IndexingService) onGetPeersResponse(msg *Message, addr *net.UDPAddr) {
 }
 
 func (is *IndexingService) onSampleInfohashesResponse(msg *Message, addr *net.UDPAddr) {
+	is.addNode(msg.R.ID, addr)
+
 	// request samples
 	for i := 0; i < len(msg.R.Samples)/20; i++ {
-		var infoHash [20]byte
-		copy(infoHash[:], msg.R.Samples[i:(i+1)*20])
-
-		msg := NewGetPeersQuery(is.nodeID, infoHash[:])
-		t := uint16BE(is.counter)
-		msg.T = t[:]
-
-		is.protocol.SendMessage(msg, addr)
-
-		is.getPeersRequests[t] = infoHash
-		is.counter++
+		infoHash := make([]byte, 20)
+		copy(infoHash, msg.R.Samples[i*20:(i+1)*20])
+		is.requestPeers(infoHash, addr)
 	}
 
-	// TODO: good idea, but also need to track how long they have been here
-	//if msg.R.Num > len(msg.R.Samples) / 20 &&  time.Duration(msg.R.Interval) <= is.interval {
-	//	if addr.Port != 0 {  // ignore nodes who "use" port 0...
-	//		is.routingTable[string(msg.R.ID)] = addr
-	//	}
-	//}
+	for _, infoHash := range msg.R.Samples2 {
+		ih := make([]byte, 32)
+		copy(ih, infoHash)
+		is.requestPeers(ih, addr)
+	}
 
-	// iterate
-	is.routingTableMutex.Lock()
-	defer is.routingTableMutex.Unlock()
 	for _, node := range msg.R.Nodes {
-		if uint(len(is.routingTable)) >= is.maxNeighbors {
+		is.addNode(node.ID, &node.Addr)
+	}
+
+	for _, node := range msg.R.Nodes6 {
+		is.addNode(node.ID, &node.Addr)
+	}
+}
+
+func (is *IndexingService) requestPeers(infoHash []byte, addr *net.UDPAddr) {
+	msg := NewGetPeersQuery(is.nodeID, infoHash)
+	t := uint16BE(is.counter)
+	msg.T = t[:]
+
+	is.protocol.SendMessage(msg, addr)
+
+	is.getPeersRequests[t] = infoHash
+	is.counter++
+}
+
+func (is *IndexingService) onSampleInfohashesQuery(msg *Message, addr *net.UDPAddr) {
+	is.routingTableMutex.RLock()
+	// Get some nodes from routing table
+	nodes := make(CompactNodeInfos, 0)
+	for id, addr := range is.routingTable {
+		nodes = append(nodes, CompactNodeInfo{
+			ID:   []byte(id),
+			Addr: *addr,
+		})
+		if len(nodes) >= 8 {
 			break
 		}
-		if node.Addr.Port == 0 { // Ignore nodes who "use" port 0.
-			continue
-		}
-		is.routingTable[string(node.ID)] = &node.Addr
-
-		// TODO
-		/*
-			target := make([]byte, 20)
-			_, err := rand.Read(target)
-			if err != nil {
-				zap.L().Panic("Could NOT generate random bytes!")
-			}
-			is.protocol.SendMessage(
-				NewSampleInfohashesQuery(is.nodeID, []byte("aa"), target),
-				&node.Addr,
-			)
-		*/
 	}
+	is.routingTableMutex.RUnlock()
+
+	response := NewSampleInfohashesResponse(msg.T, is.nodeID, int(is.interval.Seconds()), nodes, nil, 0, nil)
+	is.protocol.SendMessage(response, addr)
 }
 
 func uint16BE(v uint16) (b [2]byte) {

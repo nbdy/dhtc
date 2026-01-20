@@ -1,7 +1,9 @@
 package dhtc_client
 
 import (
+	"encoding/binary"
 	"math/rand"
+	"net"
 )
 
 func randomDigit() byte {
@@ -36,4 +38,24 @@ func randomID() []byte {
 	}
 
 	return append(prefix, rando...)
+}
+
+func parsePeers(s string) []net.TCPAddr {
+	var peers []net.TCPAddr
+	for i := 0; i+6 <= len(s); i += 6 {
+		ip := net.IP(s[i : i+4])
+		port := binary.BigEndian.Uint16([]byte(s[i+4 : i+6]))
+		peers = append(peers, net.TCPAddr{IP: ip, Port: int(port)})
+	}
+	return peers
+}
+
+func parsePeers6(s string) []net.TCPAddr {
+	var peers []net.TCPAddr
+	for i := 0; i+18 <= len(s); i += 18 {
+		ip := net.IP(s[i : i+16])
+		port := binary.BigEndian.Uint16([]byte(s[i+16 : i+18]))
+		peers = append(peers, net.TCPAddr{IP: ip, Port: int(port)})
+	}
+	return peers
 }

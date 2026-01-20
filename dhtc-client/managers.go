@@ -12,7 +12,7 @@ type Service interface {
 }
 
 type Result interface {
-	InfoHash() [20]byte
+	InfoHash() []byte
 	PeerAddrs() []net.TCPAddr
 }
 
@@ -21,12 +21,12 @@ type Manager struct {
 	indexingServices []Service
 }
 
-func NewManager(nodes []string, addrs []string, interval time.Duration, maxNeighbors uint) *Manager {
+func NewManager(nodes []string, addrs []string, interval time.Duration, maxNeighbors uint, rateLimit int) *Manager {
 	manager := new(Manager)
 	manager.output = make(chan Result, 20)
 
 	for _, addr := range addrs {
-		service := NewIndexingService(addr, interval, maxNeighbors, IndexingServiceEventHandlers{
+		service := NewIndexingService(addr, interval, maxNeighbors, rateLimit, IndexingServiceEventHandlers{
 			OnResult: manager.onIndexingResult,
 		})
 		manager.indexingServices = append(manager.indexingServices, service)

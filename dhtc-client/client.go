@@ -3,6 +3,7 @@ package dhtc_client
 import (
 	"bytes"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"github.com/anacrolix/torrent/bencode"
@@ -18,7 +19,7 @@ import (
 const MaxMetadataSize = 10 * 1024 * 1024
 
 type Client struct {
-	infoHash [20]byte
+	infoHash []byte
 	peerAddr *net.TCPAddr
 	ev       ClientEventHandlers
 
@@ -26,6 +27,7 @@ type Client struct {
 	clientID [20]byte
 
 	utMetadata                     uint8
+	utPex                          uint8
 	metadataReceived, metadataSize uint
 	metadata                       []byte
 
@@ -33,11 +35,12 @@ type Client struct {
 }
 
 type ClientEventHandlers struct {
-	OnSuccess func(Metadata)        // must be supplied. args: metadata
-	OnError   func([20]byte, error) // must be supplied. args: infohash, error
+	OnSuccess func(Metadata)              // must be supplied. args: metadata
+	OnError   func([]byte, error)         // must be supplied. args: infohash, error
+	OnPeers   func([]byte, []net.TCPAddr) // args: infohash, peers
 }
 
-func NewClient(infoHash [20]byte, peerAddr *net.TCPAddr, clientID []byte, ev ClientEventHandlers) *Client {
+func NewClient(infoHash []byte, peerAddr *net.TCPAddr, clientID []byte, ev ClientEventHandlers) *Client {
 	l := new(Client)
 	l.infoHash = infoHash
 	l.peerAddr = peerAddr
@@ -58,16 +61,18 @@ func (c *Client) writeAll(b []byte) error {
 }
 
 func (c *Client) doBtHandshake() error {
-	lHandshake := []byte(fmt.Sprintf(
-		"\x13BitTorrent protocol\x00\x00\x00\x00\x00\x10\x00\x01%s%s",
-		c.infoHash,
-		c.clientID,
-	))
-
-	// ASSERTION
-	if len(lHandshake) != 68 {
-		panic(fmt.Sprintf("len(lHandshake) == %d", len(lHandshake)))
+	ih := c.infoHash
+	if len(ih) == 32 {
+		ih = ih[:20]
 	}
+
+	lHandshake := make([]byte, 68)
+	lHandshake[0] = 19
+	copy(lHandshake[1:20], "BitTorrent protocol")
+	lHandshake[25] = 0x10
+	lHandshake[27] = 0x01
+	copy(lHandshake[28:48], ih)
+	copy(lHandshake[48:68], c.clientID[:])
 
 	err := c.writeAll(lHandshake)
 	if err != nil {
@@ -78,11 +83,14 @@ func (c *Client) doBtHandshake() error {
 	if err != nil {
 		return errors.Wrap(err, "readExactly rHandshake")
 	}
+
 	if !bytes.HasPrefix(rHandshake, []byte("\x13BitTorrent protocol")) {
 		return fmt.Errorf("corrupt BitTorrent handshake received")
 	}
 
-	// TODO: maybe check for the infohash sent by the remote peer to double check?
+	if !bytes.Equal(rHandshake[28:48], ih) {
+		return fmt.Errorf("remote peer infohash mismatch")
+	}
 
 	if (rHandshake[25] & 0x10) == 0 {
 		return fmt.Errorf("peer does not support the extension protocol")
@@ -92,7 +100,7 @@ func (c *Client) doBtHandshake() error {
 }
 
 func (c *Client) doExHandshake() error {
-	err := c.writeAll([]byte("\x00\x00\x00\x1a\x14\x00d1:md11:ut_metadatai1eee"))
+	err := c.writeAll([]byte("\x00\x00\x00\x25\x14\x00d1:md11:ut_metadatai1e6:ut_pexi2eee"))
 	if err != nil {
 		return errors.Wrap(err, "writeAll lHandshake")
 	}
@@ -122,10 +130,26 @@ func (c *Client) doExHandshake() error {
 	}
 
 	c.utMetadata = uint8(rRootDict.M.UTMetadata) // Save the ut_metadata code the remote peer uses
+	c.utPex = uint8(rRootDict.M.UTPex)
 	c.metadataSize = uint(rRootDict.MetadataSize)
 	c.metadata = make([]byte, c.metadataSize)
 
 	return nil
+}
+
+func (c *Client) handlePex(payload []byte) {
+	var msg pexMsg
+	err := bencode.Unmarshal(payload, &msg)
+	if err != nil {
+		return
+	}
+
+	peers := parsePeers(msg.Added)
+	peers = append(peers, parsePeers6(msg.Added6)...)
+
+	if len(peers) > 0 && c.ev.OnPeers != nil {
+		c.ev.OnPeers(c.infoHash, peers)
+	}
 }
 
 func (c *Client) requestAllPieces() error {
@@ -196,23 +220,6 @@ func (c *Client) readExMessage() ([]byte, error) {
 		// We are interested only in extension messages, whose first byte is always 20
 		if rMessage[0] == 20 {
 			return rMessage, nil
-		}
-	}
-}
-
-// readUmMessage returns an utMetadata extension message, sans the first 4 bytes indicating its
-// length.
-//
-// It will IGNORE all non-"ut_metadata extension" messages!
-func (c *Client) readUmMessage() ([]byte, error) {
-	for {
-		rExMessage, err := c.readExMessage()
-		if err != nil {
-			return nil, errors.Wrap(err, "readExMessage")
-		}
-
-		if rExMessage[1] == 0x01 {
-			return rExMessage, nil
 		}
 	}
 }
@@ -299,57 +306,60 @@ func (c *Client) Do(deadline time.Time) {
 	}
 
 	for c.metadataReceived < c.metadataSize {
-		rUmMessage, err := c.readUmMessage()
+		rExMessage, err := c.readExMessage()
 		if err != nil {
-			c.OnError(errors.Wrap(err, "readUmMessage"))
+			c.OnError(errors.Wrap(err, "readExMessage"))
 			return
 		}
 
-		// Run TestDecoder() function in leech_test.go in case you have any doubts.
-		rMessageBuf := bytes.NewBuffer(rUmMessage[2:])
-		rExtDict := new(extDict)
-		err = bencode.NewDecoder(rMessageBuf).Decode(rExtDict)
-		if err != nil {
-			c.OnError(errors.Wrap(err, "could not decode ext msg in the loop"))
-			return
-		}
-
-		if rExtDict.MsgType == 2 { // reject
-			c.OnError(fmt.Errorf("remote peer rejected sending metadata"))
-			return
-		}
-
-		if rExtDict.MsgType == 1 { // data
-			// Get the unread bytes!
-			metadataPiece := rMessageBuf.Bytes()
-
-			// BEP 9 explicitly states:
-			//   > If the piece is the last piece of the metadata, it may be less than 16kiB. If
-			//   > it is not the last piece of the metadata, it MUST be 16kiB.
-			//
-			// Hence...
-			//   ... if the length of @metadataPiece is more than 16kiB, we err.
-			if len(metadataPiece) > 16*1024 {
-				c.OnError(fmt.Errorf("metadataPiece > 16kiB"))
+		if rExMessage[1] == 1 { // ut_metadata
+			rMessageBuf := bytes.NewBuffer(rExMessage[2:])
+			rExtDict := new(extDict)
+			err = bencode.NewDecoder(rMessageBuf).Decode(rExtDict)
+			if err != nil {
+				c.OnError(errors.Wrap(err, "could not decode ext msg in the loop"))
 				return
 			}
 
-			piece := rExtDict.Piece
-			// metadata[piece * 2**14: piece * 2**14 + len(metadataPiece)] = metadataPiece is how it'd be done in Python
-			copy(c.metadata[piece*int(math.Pow(2, 14)):piece*int(math.Pow(2, 14))+len(metadataPiece)], metadataPiece)
-			c.metadataReceived += uint(len(metadataPiece))
-
-			// ... if the length of @metadataPiece is less than 16kiB AND metadata is NOT
-			// complete then we err.
-			if len(metadataPiece) < 16*1024 && c.metadataReceived != c.metadataSize {
-				c.OnError(fmt.Errorf("metadataPiece < 16 kiB but incomplete"))
+			if rExtDict.MsgType == 2 { // reject
+				c.OnError(fmt.Errorf("remote peer rejected sending metadata"))
 				return
 			}
 
-			if c.metadataReceived > c.metadataSize {
-				c.OnError(fmt.Errorf("metadataReceived > metadataSize"))
-				return
+			if rExtDict.MsgType == 1 { // data
+				// Get the unread bytes!
+				metadataPiece := rMessageBuf.Bytes()
+
+				// BEP 9 explicitly states:
+				//   > If the piece is the last piece of the metadata, it may be less than 16kiB. If
+				//   > it is not the last piece of the metadata, it MUST be 16kiB.
+				//
+				// Hence...
+				//   ... if the length of @metadataPiece is more than 16kiB, we err.
+				if len(metadataPiece) > 16*1024 {
+					c.OnError(fmt.Errorf("metadataPiece > 16kiB"))
+					return
+				}
+
+				piece := rExtDict.Piece
+				// metadata[piece * 2**14: piece * 2**14 + len(metadataPiece)] = metadataPiece is how it'd be done in Python
+				copy(c.metadata[piece*16384:piece*16384+len(metadataPiece)], metadataPiece)
+				c.metadataReceived += uint(len(metadataPiece))
+
+				// ... if the length of @metadataPiece is less than 16kiB AND metadata is NOT
+				// complete then we err.
+				if len(metadataPiece) < 16*1024 && c.metadataReceived != c.metadataSize {
+					c.OnError(fmt.Errorf("metadataPiece < 16 kiB but incomplete"))
+					return
+				}
+
+				if c.metadataReceived > c.metadataSize {
+					c.OnError(fmt.Errorf("metadataReceived > metadataSize"))
+					return
+				}
 			}
+		} else if rExMessage[1] == 2 { // ut_pex
+			c.handlePex(rExMessage[2:])
 		}
 	}
 
@@ -358,8 +368,16 @@ func (c *Client) Do(deadline time.Time) {
 	c.closeConn()
 
 	// Verify the checksum
-	sha1Sum := sha1.Sum(c.metadata)
-	if !bytes.Equal(sha1Sum[:], c.infoHash[:]) {
+	var sum []byte
+	if len(c.infoHash) == 32 {
+		s256 := sha256.Sum256(c.metadata)
+		sum = s256[:]
+	} else {
+		s1 := sha1.Sum(c.metadata)
+		sum = s1[:]
+	}
+
+	if !bytes.Equal(sum, c.infoHash) {
 		c.OnError(fmt.Errorf("infohash mismatch"))
 		return
 	}
@@ -413,7 +431,7 @@ func (c *Client) Do(deadline time.Time) {
 }
 
 func validateInfo(info *metainfo.Info) error {
-	if len(info.Pieces)%20 != 0 {
+	if len(info.Pieces) > 0 && len(info.Pieces)%20 != 0 {
 		return errors.New("pieces has invalid length")
 	}
 	if info.PieceLength == 0 {
@@ -421,7 +439,7 @@ func validateInfo(info *metainfo.Info) error {
 			return errors.New("zero piece length")
 		}
 	} else {
-		if int((info.TotalLength()+info.PieceLength-1)/info.PieceLength) != info.NumPieces() {
+		if len(info.Pieces) > 0 && int((info.TotalLength()+info.PieceLength-1)/info.PieceLength) != info.NumPieces() {
 			return errors.New("piece count and file lengths are at odds")
 		}
 	}

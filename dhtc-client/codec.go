@@ -1,3 +1,4 @@
+// Package dhtc_client provides a DHT client implementation.
 package dhtc_client
 
 import (
@@ -5,112 +6,108 @@ import (
 	"fmt"
 	"github.com/anacrolix/missinggo/v2/iter"
 	"github.com/anacrolix/torrent/bencode"
-	"github.com/pkg/errors"
 	"github.com/willf/bloom"
 	"net"
-	"regexp"
 )
 
-// TODO: This file, as a whole, needs a little skim-through to clear things up, sprinkle a little
-//       documentation here and there, and also to make the test coverage 100%.
-//       It, most importantly, lacks IPv6 support, if it's not altogether messy and unreliable
-//       (hint: it is).
-
+// Message represents a KRPC message.
 type Message struct {
-	// Query method. One of 5:
+	// Q is the Query method. One of 5:
 	//   - "ping"
 	//   - "find_node"
 	//   - "get_peers"
 	//   - "announce_peer"
 	//   - "sample_infohashes" (added by BEP 51)
 	Q string `bencode:"q,omitempty"`
-	// named QueryArguments sent with a query
+	// A contains the named QueryArguments sent with a query.
 	A QueryArguments `bencode:"a,omitempty"`
-	// required: transaction ID
+	// T is the required transaction ID.
 	T []byte `bencode:"t"`
-	// required: type of the message: q for QUERY, r for RESPONSE, e for ERROR
+	// Y is the required type of the message: q for QUERY, r for RESPONSE, e for ERROR.
 	Y string `bencode:"y"`
-	// RESPONSE type only
+	// R is the RESPONSE type only.
 	R ResponseValues `bencode:"r,omitempty"`
-	// ERROR type only
+	// E is the ERROR type only.
 	E Error `bencode:"e,omitempty"`
 }
 
+// QueryArguments represents the "a" dictionary in a DHT query.
 type QueryArguments struct {
-	// ID of the querying Node
+	// ID is the ID of the querying Node.
 	ID []byte `bencode:"id"`
-	// InfoHash of the torrent
+	// InfoHash is the InfoHash of the torrent.
 	InfoHash []byte `bencode:"info_hash,omitempty"`
-	// ID of the node sought
+	// Target is the ID of the node sought.
 	Target []byte `bencode:"target,omitempty"`
-	// Token received from an earlier get_peers query
+	// Token is the token received from an earlier get_peers query.
 	Token []byte `bencode:"token,omitempty"`
-	// Senders torrent port
+	// Port is the senders torrent port.
 	Port int `bencode:"port,omitempty"`
-	// Use senders apparent DHT port
+	// ImpliedPort indicates if the senders apparent DHT port should be used.
 	ImpliedPort int `bencode:"implied_port,omitempty"`
 
-	// Indicates whether the querying node is seeding the torrent it announces.
+	// Seed indicates whether the querying node is seeding the torrent it announces.
 	// Defined in BEP 33 "DHT Scrapes" for `announce_peer` queries.
 	Seed int `bencode:"seed,omitempty"`
 
-	// If 1, then the responding node should try to fill the `values` list with non-seed items on a
-	// best-effort basis.
+	// NoSeed indicates if the responding node should try to fill the `values` list with non-seed items.
 	// Defined in BEP 33 "DHT Scrapes" for `get_peers` queries.
 	NoSeed int `bencode:"noseed,omitempty"`
-	// If 1, then the responding node should add two fields to the "r" dictionary in the response:
-	//   - `BFsd`: Bloom Filter (256 bytes) representing all stored seeds for that infohash
-	//   - `BFpe`: Bloom Filter (256 bytes) representing all stored peers (leeches) for that
-	//             infohash
+	// Scrape indicates if the responding node should add Bloom Filters to the response.
 	// Defined in BEP 33 "DHT Scrapes" for `get_peers` queries.
-	Scrape int `bencode:"noseed,omitempty"`
+	Scrape int `bencode:"scrape,omitempty"`
 }
 
+// ResponseValues represents the "r" dictionary in a DHT response.
 type ResponseValues struct {
-	// ID of the querying node
+	// ID of the responding node.
 	ID []byte `bencode:"id"`
-	// K closest nodes to the requested target
+	// Nodes is a list of K closest nodes to the requested target (IPv4).
 	Nodes CompactNodeInfos `bencode:"nodes,omitempty"`
-	// Token for future announce_peer
+	// Nodes6 is a list of K closest nodes to the requested target (IPv6).
+	Nodes6 CompactNodeInfos `bencode:"nodes6,omitempty"`
+	// Token for future announce_peer.
 	Token []byte `bencode:"token,omitempty"`
-	// Torrent peers
+	// Values is a list of torrent peers.
 	Values []CompactPeer `bencode:"values,omitempty"`
 
-	// The subset refresh interval in seconds. Added by BEP 51.
+	// Interval is the subset refresh interval in seconds (BEP 51).
 	Interval int `bencode:"interval,omitempty"`
-	// Number of infohashes in storage. Added by BEP 51.
+	// Num is the number of infohashes in storage (BEP 51).
 	Num int `bencode:"num,omitempty"`
-	// Subset of stored infohashes, N × 20 bytes. Added by BEP 51.
+	// Samples is a subset of stored infohashes, N × 20 bytes (BEP 51).
 	Samples []byte `bencode:"samples,omitempty"`
+	// Samples2 is a subset of stored 32-byte infohashes (BEP 52).
+	Samples2 [][]byte `bencode:"samples2,omitempty"`
 
-	// If `scrape` is set to 1 in the `get_peers` query then the responding node should add the
-	// below two fields to the "r" dictionary in the response:
-	// Defined in BEP 33 "DHT Scrapes" for responses to `get_peers` queries.
-	// Bloom Filter (256 bytes) representing all stored seeds for that infohash:
+	// BFsd is a Bloom Filter (256 bytes) representing all stored seeds for that infohash (BEP 33).
 	BFsd *bloom.BloomFilter `bencode:"BFsd,omitempty"`
-	// Bloom Filter (256 bytes) representing all stored peers (leeches) for that infohash:
+	// BFpe is a Bloom Filter (256 bytes) representing all stored peers for that infohash (BEP 33).
 	BFpe *bloom.BloomFilter `bencode:"BFpe,omitempty"`
-	// TODO: write marshallers for those fields above ^^
 }
 
+// Error represents a KRPC error.
 type Error struct {
 	Code    int
 	Message []byte
 }
 
-// CompactPeer Represents peer address in either IPv6 or IPv4 form.
+// CompactPeer represents a peer's IP and port.
 type CompactPeer struct {
 	IP   net.IP
 	Port int
 }
 
+// CompactPeers is a slice of CompactPeer.
 type CompactPeers []CompactPeer
 
+// CompactNodeInfo represents a node's ID and address.
 type CompactNodeInfo struct {
 	ID   []byte
 	Addr net.UDPAddr
 }
 
+// CompactNodeInfos is a slice of CompactNodeInfo.
 type CompactNodeInfos []CompactNodeInfo
 
 // UnmarshalBencode This allows bencode.Unmarshal to do better than a string or []byte.
@@ -125,23 +122,29 @@ func (cps *CompactPeers) UnmarshalBencode(b []byte) (err error) {
 }
 
 func (cps CompactPeers) MarshalBinary() (ret []byte, err error) {
-	ret = make([]byte, len(cps)*6)
-	for i, cp := range cps {
-		copy(ret[6*i:], cp.IP.To4())
-		binary.BigEndian.PutUint16(ret[6*i+4:], uint16(cp.Port))
+	for _, cp := range cps {
+		ret = append(ret, cp.MarshalBinary()...)
 	}
 	return
 }
 
 func (cp CompactPeer) MarshalBencode() (ret []byte, err error) {
-	ip := cp.IP
-	if ip4 := ip.To4(); ip4 != nil {
-		ip = ip4
+	b := cp.MarshalBinary()
+	return bencode.Marshal(b)
+}
+
+func (cp CompactPeer) MarshalBinary() []byte {
+	ip := cp.IP.To4()
+	if ip == nil {
+		ip = cp.IP.To16()
 	}
-	ret = make([]byte, len(ip)+2)
+	if ip == nil {
+		return nil
+	}
+	ret := make([]byte, len(ip)+2)
 	copy(ret, ip)
 	binary.BigEndian.PutUint16(ret[len(ip):], uint16(cp.Port))
-	return bencode.Marshal(ret)
+	return ret
 }
 
 func (cp *CompactPeer) UnmarshalBinary(b []byte) error {
@@ -169,11 +172,24 @@ func (cp *CompactPeer) UnmarshalBencode(b []byte) (err error) {
 }
 
 func UnmarshalCompactPeers(b []byte) (ret []CompactPeer, err error) {
-	num := len(b) / 6
+	if len(b) == 0 {
+		return nil, nil
+	}
+
+	var peerSize int
+	if len(b)%6 == 0 {
+		peerSize = 6
+	} else if len(b)%18 == 0 {
+		peerSize = 18
+	} else {
+		return nil, fmt.Errorf("compact peer info length %d is neither a multiple of 6 nor 18", len(b))
+	}
+
+	num := len(b) / peerSize
 	ret = make([]CompactPeer, num)
 	for i := range iter.N(num) {
-		off := i * 6
-		err = ret[i].UnmarshalBinary(b[off : off+6])
+		off := i * peerSize
+		err = ret[i].UnmarshalBinary(b[off : off+peerSize])
 		if err != nil {
 			return
 		}
@@ -193,17 +209,25 @@ func (cnis *CompactNodeInfos) UnmarshalBencode(b []byte) (err error) {
 }
 
 func UnmarshalCompactNodeInfos(b []byte) (ret []CompactNodeInfo, err error) {
-	if len(b)%26 != 0 {
-		err = fmt.Errorf("compact node is not a multiple of 26")
+	if len(b) == 0 {
+		return nil, nil
+	}
+
+	var nodeSize int
+	if len(b)%26 == 0 {
+		nodeSize = 26
+	} else if len(b)%38 == 0 {
+		nodeSize = 38
+	} else {
+		err = fmt.Errorf("compact node is neither a multiple of 26 nor 38")
 		return
 	}
 
-	num := len(b) / 26
+	num := len(b) / nodeSize
 	ret = make([]CompactNodeInfo, num)
 	for i := range iter.N(num) {
-		off := i * 26
-		ret[i].ID = make([]byte, 20)
-		err = ret[i].UnmarshalBinary(b[off : off+26])
+		off := i * nodeSize
+		err = ret[i].UnmarshalBinary(b[off : off+nodeSize])
 		if err != nil {
 			return
 		}
@@ -212,11 +236,25 @@ func UnmarshalCompactNodeInfos(b []byte) (ret []CompactNodeInfo, err error) {
 }
 
 func (cni *CompactNodeInfo) UnmarshalBinary(b []byte) error {
-	copy(cni.ID[:], b)
-	b = b[len(cni.ID):]
-	cni.Addr.IP = make([]byte, 4)
-	copy(cni.Addr.IP, b)
-	b = b[len(cni.Addr.IP):]
+	if len(b) != 26 && len(b) != 38 {
+		return fmt.Errorf("invalid compact node info length: %d", len(b))
+	}
+	if len(cni.ID) != 20 {
+		cni.ID = make([]byte, 20)
+	}
+	copy(cni.ID, b[:20])
+	b = b[20:]
+
+	var ipLen int
+	if len(b) == 6 {
+		ipLen = 4
+	} else {
+		ipLen = 16
+	}
+
+	cni.Addr.IP = make([]byte, ipLen)
+	copy(cni.Addr.IP, b[:ipLen])
+	b = b[ipLen:]
 	cni.Addr.Port = int(binary.BigEndian.Uint16(b))
 	cni.Addr.Zone = ""
 	return nil
@@ -238,9 +276,13 @@ func (cnis CompactNodeInfos) MarshalBencode() ([]byte, error) {
 
 func (cni CompactNodeInfo) MarshalBinary() []byte {
 	ret := make([]byte, 20)
-
 	copy(ret, cni.ID)
-	ret = append(ret, cni.Addr.IP.To4()...)
+
+	ip := cni.Addr.IP
+	if ip4 := ip.To4(); ip4 != nil {
+		ip = ip4
+	}
+	ret = append(ret, ip...)
 
 	portEncoding := make([]byte, 2)
 	binary.BigEndian.PutUint16(portEncoding, uint16(cni.Addr.Port))
@@ -250,31 +292,39 @@ func (cni CompactNodeInfo) MarshalBinary() []byte {
 }
 
 func (e Error) MarshalBencode() ([]byte, error) {
-	return []byte(fmt.Sprintf("li%de%d:%se", e.Code, len(e.Message), e.Message)), nil
+	return bencode.Marshal([]interface{}{e.Code, e.Message})
 }
 
 func (e *Error) UnmarshalBencode(b []byte) (err error) {
-	var code, msgLen int
-
-	result := regexp.MustCompile(`li([0-9]+)e([0-9]+):(.+)e`).FindAllSubmatch(b, 1)
-	if len(result) == 0 {
-		return fmt.Errorf("could not parse the error list")
+	var i interface{}
+	err = bencode.Unmarshal(b, &i)
+	if err != nil {
+		return err
 	}
 
-	matches := result[0][1:]
-	if _, err := fmt.Sscanf(string(matches[0]), "%d", &code); err != nil {
-		return errors.Wrap(err, "could not parse error code")
-	}
-	if _, err := fmt.Sscanf(string(matches[1]), "%d", &msgLen); err != nil {
-		return errors.Wrap(err, "could not parse error msg length")
+	l, ok := i.([]interface{})
+	if !ok {
+		return fmt.Errorf("invalid error type: %T", i)
 	}
 
-	if len(matches[2]) != msgLen {
-		return fmt.Errorf("error message have different lengths (%d vs %d) \"%s\"", len(matches[2]), msgLen, matches[2])
+	if len(l) < 2 {
+		return fmt.Errorf("invalid error list length: %d", len(l))
 	}
 
-	e.Code = code
-	e.Message = matches[2]
+	code, ok := l[0].(int64)
+	if !ok {
+		return fmt.Errorf("invalid error code type: %T", l[0])
+	}
+	e.Code = int(code)
+
+	switch v := l[1].(type) {
+	case []byte:
+		e.Message = v
+	case string:
+		e.Message = []byte(v)
+	default:
+		return fmt.Errorf("invalid error message type: %T", l[1])
+	}
 
 	return nil
 }

@@ -8,6 +8,14 @@ import (
 
 type mDict struct {
 	UTMetadata int `bencode:"ut_metadata"`
+	UTPex      int `bencode:"ut_pex"`
+}
+
+type pexMsg struct {
+	Added   string `bencode:"added"`
+	AddedF  string `bencode:"added.f"`
+	Added6  string `bencode:"added6"`
+	Added6F string `bencode:"added6.f"`
 }
 
 type rootDict struct {
@@ -63,12 +71,14 @@ type Metadata struct {
 }
 
 type Sink struct {
-	PeerID      []byte
-	deadline    time.Duration
-	maxNLeeches int
-	drain       chan Metadata
+	PeerID                 []byte
+	deadline               time.Duration
+	maxNLeeches            int
+	maxConcurrentDownloads int
+	downloadSem            chan struct{}
+	drain                  chan Metadata
 
-	incomingInfoHashes   map[[20]byte][]net.TCPAddr
+	incomingInfoHashes   map[string][]net.TCPAddr
 	incomingInfoHashesMx sync.Mutex
 
 	terminated  bool
