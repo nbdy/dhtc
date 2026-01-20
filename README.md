@@ -4,11 +4,11 @@
 [![Build Status](https://github.com/nbdy/dhtc/actions/workflows/build.yml/badge.svg)](https://github.com/nbdy/dhtc/actions)
 [![Maintenance](https://img.shields.io/badge/status-maintenance-orange)](https://github.com/nbdy/dhtc)
 
-**Build your own private torrent search engine.**  
+**Build your own private torrent search engine.**
 `dhtc` is a high-performance DHT crawler that indexes the BitTorrent network in real-time and provides a beautiful web interface to explore, search, and manage your findings.
 
-> [!NOTE]  
-> **This project is currently in maintenance mode.**  
+> [!NOTE]
+> **This project is currently in maintenance mode.**
 > While new features aren't actively being added, the project remains stable, fully functional, and ready for deployment.
 
 ---
@@ -37,6 +37,26 @@
 - **Secure by Design**: Optional Basic Auth support to protect your web interface.
 - **Multiplatform**: Runs anywhere Go or Docker can run.
 - **Docker Ready**: Deploy anywhere in seconds with the official Docker Compose setup.
+
+---
+
+### 📸 Screenshots
+
+| Dashboard | Search |
+|-----------|--------|
+| ![Dashboard](screenshots/dashboard.png) | ![Search](screenshots/search.png) |
+
+| Discover | Watches |
+|----------|---------|
+| ![Discover](screenshots/discover.png) | ![Watches](screenshots/watches.png) |
+
+| Blacklist | Settings |
+|-----------|----------|
+| ![Blacklist](screenshots/blacklist.png) | ![Settings](screenshots/settings.png) |
+
+| Trawl |
+|-------|
+| ![Trawl](screenshots/trawl.png) |
 
 ---
 
