@@ -1,0 +1,41 @@
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependencies
+node_modules/
+vendor/
+
+# Binaries and executables
+/dhtc
+/main
+/tailwindcss-linux-x64
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build artifacts
+/.output.txt
+ui/static/css/style.css
+
+# Databases and data
+*.db
+dhtdb/
+cmd/dhtc/dhtdb/
+cache/data.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+TODO.md
