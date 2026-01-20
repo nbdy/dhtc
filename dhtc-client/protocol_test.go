@@ -7,7 +7,7 @@ import (
 )
 
 func TestVerifyToken(t *testing.T) {
-	p := NewProtocol(":0", ProtocolEventHandlers{})
+	p := NewProtocol(":0", 100, ProtocolEventHandlers{})
 	addr := net.ParseIP("127.0.0.1")
 	token := p.CalculateToken(addr)
 
