@@ -1,16 +1,26 @@
 package dhtc_client
 
 import (
+	"context"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/time/rate"
 	"net"
 )
+
+type sendRequest struct {
+	msg  *Message
+	addr *net.UDPAddr
+}
 
 type Transport struct {
 	fd      *net.UDPConn
 	laddr   *net.UDPAddr
 	started bool
 	buffer  []byte
+
+	limiter  *rate.Limiter
+	sendChan chan sendRequest
 
 	// OnMessage is the function that will be called when Transport receives a packet that is
 	// successfully unmarshalled as a syntactically correct Message (but, of course, checking
@@ -20,7 +30,7 @@ type Transport struct {
 	onCongestion func()
 }
 
-func NewTransport(laddr string, onMessage func(*Message, *net.UDPAddr), onCongestion func()) *Transport {
+func NewTransport(laddr string, rateLimit int, onMessage func(*Message, *net.UDPAddr), onCongestion func()) *Transport {
 	t := new(Transport)
 	/*   The field size sets a theoretical limit of 65,535 bytes (8 byte header + 65,527 bytes of
 	 * data) for a UDP datagram. However, the actual limit for the data length, which is imposed by
@@ -37,14 +47,16 @@ func NewTransport(laddr string, onMessage func(*Message, *net.UDPAddr), onConges
 	t.onMessage = onMessage
 	t.onCongestion = onCongestion
 
+	if rateLimit > 0 {
+		t.limiter = rate.NewLimiter(rate.Limit(rateLimit), rateLimit)
+	}
+	t.sendChan = make(chan sendRequest, 2048)
+
 	var err error
 	t.laddr, err = net.ResolveUDPAddr("udp", laddr)
 	if err != nil {
 		log.Panic().Msg("Could not resolve the UDP address for the trawler!")
 		log.Panic().Err(err)
-	}
-	if t.laddr.IP.To4() == nil {
-		log.Panic().Msg("IP address is not IPv4!")
 	}
 
 	return t
@@ -65,13 +77,7 @@ func (t *Transport) Start() {
 	t.started = true
 
 	var err error
-	var ip [4]byte
-	copy(ip[:], t.laddr.IP.To4())
-
-	t.fd, err = net.ListenUDP("udp", &net.UDPAddr{
-		IP:   t.laddr.IP.To4(),
-		Port: t.laddr.Port,
-	})
+	t.fd, err = net.ListenUDP("udp", t.laddr)
 
 	if err != nil {
 		log.Fatal().Msg("Could NOT bind the socket!")
@@ -79,10 +85,12 @@ func (t *Transport) Start() {
 	}
 
 	go t.readMessages()
+	go t.sendLoop()
 }
 
 func (t *Transport) Terminate() {
 	_ = t.fd.Close()
+	close(t.sendChan)
 }
 
 // readMessages is a goroutine!
@@ -109,6 +117,23 @@ func (t *Transport) readMessages() {
 }
 
 func (t *Transport) WriteMessages(msg *Message, addr *net.UDPAddr) {
+	select {
+	case t.sendChan <- sendRequest{msg, addr}:
+	default:
+		// Drop message if channel is full
+	}
+}
+
+func (t *Transport) sendLoop() {
+	for req := range t.sendChan {
+		if t.limiter != nil {
+			_ = t.limiter.Wait(context.Background())
+		}
+		t.writeImmediately(req.msg, req.addr)
+	}
+}
+
+func (t *Transport) writeImmediately(msg *Message, addr *net.UDPAddr) {
 	data, err := bencode.Marshal(msg)
 	if err != nil {
 		log.Panic().Msg("Could NOT marshal an outgoing message! (Programmer error.)")

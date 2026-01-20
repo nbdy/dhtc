@@ -1,6 +1,7 @@
 package dhtc_client
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha1"
 	"github.com/rs/zerolog/log"
@@ -33,10 +34,10 @@ type ProtocolEventHandlers struct {
 	OnCongestion func()
 }
 
-func NewProtocol(laddr string, eventHandlers ProtocolEventHandlers) (p *Protocol) {
+func NewProtocol(laddr string, rateLimit int, eventHandlers ProtocolEventHandlers) (p *Protocol) {
 	p = new(Protocol)
 	p.eventHandlers = eventHandlers
-	p.transport = NewTransport(laddr, p.onMessage, p.eventHandlers.OnCongestion)
+	p.transport = NewTransport(laddr, rateLimit, p.onMessage, p.eventHandlers.OnCongestion)
 
 	p.currentTokenSecret, p.previousTokenSecret = make([]byte, 20), make([]byte, 20)
 	_, err := rand.Read(p.currentTokenSecret)
@@ -191,7 +192,14 @@ func (p *Protocol) SendMessage(msg *Message, addr *net.UDPAddr) {
 }
 
 func NewPingQuery(id []byte) *Message {
-	panic("Not implemented yet!")
+	return &Message{
+		Y: "q",
+		T: []byte("aa"),
+		Q: "ping",
+		A: QueryArguments{
+			ID: id,
+		},
+	}
 }
 
 func NewFindNodeQuery(id []byte, target []byte) *Message {
@@ -219,10 +227,25 @@ func NewGetPeersQuery(id []byte, infoHash []byte) *Message {
 }
 
 func NewAnnouncePeerQuery(id []byte, impliedPort bool, infoHash []byte, port uint16, token []byte) *Message {
-	panic("Not implemented yet!")
+	ip := 0
+	if impliedPort {
+		ip = 1
+	}
+	return &Message{
+		Y: "q",
+		T: []byte("aa"),
+		Q: "announce_peer",
+		A: QueryArguments{
+			ID:          id,
+			ImpliedPort: ip,
+			InfoHash:    infoHash,
+			Port:        int(port),
+			Token:       token,
+		},
+	}
 }
 
-func NewSampleInfoHashQuery(id []byte, t []byte, target []byte) *Message {
+func NewSampleInfohashesQuery(id []byte, t []byte, target []byte) *Message {
 	return &Message{
 		Y: "q",
 		T: t,
@@ -244,15 +267,30 @@ func NewPingResponse(t []byte, id []byte) *Message {
 	}
 }
 
-func NewFindNodeResponse(t []byte, id []byte, nodes []CompactNodeInfo) *Message {
-	panic("Not implemented yet!")
+func NewFindNodeResponse(t []byte, id []byte, nodes CompactNodeInfos) *Message {
+	return &Message{
+		Y: "r",
+		T: t,
+		R: ResponseValues{
+			ID:    id,
+			Nodes: nodes,
+		},
+	}
 }
 
 func NewGetPeersResponseWithValues(t []byte, id []byte, token []byte, values []CompactPeer) *Message {
-	panic("Not implemented yet!")
+	return &Message{
+		Y: "r",
+		T: t,
+		R: ResponseValues{
+			ID:     id,
+			Token:  token,
+			Values: values,
+		},
+	}
 }
 
-func NewGetPeersResponseWithNodes(t []byte, id []byte, token []byte, nodes []CompactNodeInfo) *Message {
+func NewGetPeersResponseWithNodes(t []byte, id []byte, token []byte, nodes CompactNodeInfos) *Message {
 	return &Message{
 		Y: "r",
 		T: t,
@@ -269,6 +307,21 @@ func NewAnnouncePeerResponse(t []byte, id []byte) *Message {
 	return NewPingResponse(t, id)
 }
 
+func NewSampleInfohashesResponse(t []byte, id []byte, interval int, nodes CompactNodeInfos, nodes6 CompactNodeInfos, num int, samples []byte) *Message {
+	return &Message{
+		Y: "r",
+		T: t,
+		R: ResponseValues{
+			ID:       id,
+			Interval: interval,
+			Nodes:    nodes,
+			Nodes6:   nodes6,
+			Num:      num,
+			Samples:  samples,
+		},
+	}
+}
+
 func (p *Protocol) CalculateToken(address net.IP) []byte {
 	p.tokenLock.Lock()
 	defer p.tokenLock.Unlock()
@@ -279,8 +332,14 @@ func (p *Protocol) CalculateToken(address net.IP) []byte {
 func (p *Protocol) VerifyToken(address net.IP, token []byte) bool {
 	p.tokenLock.Lock()
 	defer p.tokenLock.Unlock()
-	// TODO: implement VerifyToken()
-	panic("VerifyToken() not implemented yet!")
+
+	sum := sha1.Sum(append(p.currentTokenSecret, address...))
+	if bytes.Equal(sum[:], token) {
+		return true
+	}
+
+	sum = sha1.Sum(append(p.previousTokenSecret, address...))
+	return bytes.Equal(sum[:], token)
 }
 
 func (p *Protocol) updateTokenSecret() {
@@ -308,12 +367,12 @@ func validateFindNodeQueryMessage(msg *Message) bool {
 
 func validateGetPeersQueryMessage(msg *Message) bool {
 	return len(msg.A.ID) == 20 &&
-		len(msg.A.InfoHash) == 20
+		(len(msg.A.InfoHash) == 20 || len(msg.A.InfoHash) == 32)
 }
 
 func validateAnnouncePeerQueryMessage(msg *Message) bool {
 	return len(msg.A.ID) == 20 &&
-		len(msg.A.InfoHash) == 20 &&
+		(len(msg.A.InfoHash) == 20 || len(msg.A.InfoHash) == 32) &&
 		msg.A.Port > 0 &&
 		len(msg.A.Token) > 0
 }
@@ -328,27 +387,32 @@ func validatePingORannouncePeerResponseMessage(msg *Message) bool {
 }
 
 func validateFindNodeResponseMessage(msg *Message) bool {
-	//lint:ignore S1008 to be done later
 	if len(msg.R.ID) != 20 {
 		return false
 	}
 
-	// TODO: check nodes field
-
-	return true
+	return len(msg.R.Nodes) > 0 || len(msg.R.Nodes6) > 0
 }
 
 func validateGetPeersResponseMessage(msg *Message) bool {
-	return len(msg.R.ID) == 20 &&
-		len(msg.R.Token) > 0
+	if len(msg.R.ID) != 20 || len(msg.R.Token) == 0 {
+		return false
+	}
 
-	// TODO: check for values or nodes
+	return len(msg.R.Values) > 0 || len(msg.R.Nodes) > 0 || len(msg.R.Nodes6) > 0
 }
 
 func validateSampleInfohashesResponseMessage(msg *Message) bool {
-	return len(msg.R.ID) == 20 &&
-		msg.R.Interval >= 0 &&
-		// TODO: check for nodes
-		msg.R.Num >= 0 &&
-		len(msg.R.Samples)%20 == 0
+	if len(msg.R.ID) != 20 || msg.R.Interval < 0 || msg.R.Num < 0 {
+		return false
+	}
+	if len(msg.R.Samples)%20 != 0 {
+		return false
+	}
+	for _, sample := range msg.R.Samples2 {
+		if len(sample) != 32 {
+			return false
+		}
+	}
+	return true
 }
