@@ -10,11 +10,10 @@ import (
 	"dhtc/ui"
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/ostafen/clover/v2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	telegram "gopkg.in/telebot.v3"
 )
 
 func ReadFileLines(filePath string) []string {
@@ -35,27 +34,28 @@ func ReadFileLines(filePath string) []string {
 	return rVal
 }
 
-func crawl(configuration *config.Configuration, bootstrapNodes []string, database *clover.DB, bot *telegram.Bot) {
+func crawl(configuration *config.Configuration, bootstrapNodes []string, database db.Repository, nManager *notifier.Manager, hub *ui.Hub) {
 	indexerAddrs := []string{"0.0.0.0:0"}
 	interruptChan := make(chan os.Signal, 1)
 
-	trawlingManager := dhtcclient.NewManager(bootstrapNodes, indexerAddrs, 1, configuration.MaxNeighbors)
-	metadataSink := dhtcclient.NewSink(configuration.DrainTimeout, configuration.MaxLeeches)
+	trawlingManager := dhtcclient.NewManager(bootstrapNodes, indexerAddrs, 10*time.Second, configuration.MaxNeighbors, configuration.RateLimit)
+	metadataSink := dhtcclient.NewSink(configuration.DrainTimeout, configuration.MaxLeeches, configuration.MaxConcurrentDownloads)
 
 	for stopped := false; !stopped; {
 		select {
 		case result := <-trawlingManager.Output():
 			hash := result.InfoHash()
 
-			if !cache.InfoHashCache.Contains(hash) {
-				cache.InfoHashCache.Add(hash)
+			if !cache.InfoHashCache.Contains(string(hash)) {
+				cache.InfoHashCache.Add(string(hash))
 				metadataSink.Sink(result)
 			}
 
 		case md := <-metadataSink.Drain():
-			if db.InsertMetadata(configuration, database, md) {
+			if database.InsertMetadata(md) {
 				fmt.Println("\t + Added:", md.Name)
-				db.CheckWatches(configuration, database, md, bot)
+				db.CheckWatches(configuration, database, md, nManager)
+				hub.BroadcastMetadata(md)
 			}
 
 		case <-interruptChan:
@@ -65,16 +65,34 @@ func crawl(configuration *config.Configuration, bootstrapNodes []string, databas
 	}
 }
 
+func collectStats(database db.Repository) {
+	ticker := time.NewTicker(1 * time.Minute)
+	for {
+		count := database.GetInfoHashCount()
+		err := database.InsertStats(db.Stats{
+			Timestamp:    time.Now().Truncate(time.Minute),
+			TorrentCount: int64(count),
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("could not insert stats")
+		}
+		<-ticker.C
+	}
+}
+
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	cfg := config.ParseArguments()
-	database := db.OpenDatabase(cfg)
+	database, err := db.OpenRepository(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not open database")
+	}
 
 	cache.PopulateInfoHashCacheFromDatabase(database)
 
-	db.AddToBlacklist(database, ReadFileLines(cfg.NameBlacklist), "0")
-	db.AddToBlacklist(database, ReadFileLines(cfg.FileBlacklist), "1")
+	database.AddToBlacklist(ReadFileLines(cfg.NameBlacklist), "0")
+	database.AddToBlacklist(ReadFileLines(cfg.FileBlacklist), "1")
 
 	bootstrapNodes := ReadFileLines(cfg.BootstrapNodeFile)
 
@@ -87,13 +105,20 @@ func main() {
 		}
 	}
 
+	hub := ui.NewHub()
+	go hub.Run()
+
 	if !cfg.OnlyWebServer {
-		bot := notifier.SetupTelegramBot(cfg)
+		nManager := notifier.SetupNotifiers(cfg)
+
+		if cfg.Statistics {
+			go collectStats(database)
+		}
 
 		for i := 0; i < cfg.CrawlerThreads; i++ {
-			go crawl(cfg, bootstrapNodes, database, bot)
+			go crawl(cfg, bootstrapNodes, database, nManager, hub)
 		}
 	}
 
-	ui.RunWebServer(cfg, database)
+	ui.RunWebServer(cfg, database, hub)
 }
