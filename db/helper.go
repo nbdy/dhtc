@@ -2,9 +2,10 @@ package db
 
 import (
 	"fmt"
-	"github.com/ostafen/clover/v2/document"
 	"strings"
 	"time"
+
+	"github.com/ostafen/clover/v2/document"
 )
 
 func Document2MetaData(value *document.Document) MetaData {

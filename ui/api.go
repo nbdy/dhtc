@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"dhtc/db"
 	"net/http"
 	"strconv"
 
@@ -9,33 +8,9 @@ import (
 )
 
 func (c *Controller) APISearch(ctx *gin.Context) {
-	key := ctx.Query("key")
-	matchType := ctx.Query("match-type")
-	searchInput := ctx.Query("search-input")
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "50"))
+	params := c.parseSearchParams(ctx)
 
-	minSize, _ := strconv.ParseUint(ctx.DefaultQuery("min-size", "0"), 10, 64)
-	maxSize, _ := strconv.ParseUint(ctx.DefaultQuery("max-size", "0"), 10, 64)
-	startDate, _ := strconv.ParseInt(ctx.DefaultQuery("start-date", "0"), 10, 64)
-	endDate, _ := strconv.ParseInt(ctx.DefaultQuery("end-date", "0"), 10, 64)
-
-	filters := db.SearchFilters{
-		MinSize:   minSize,
-		MaxSize:   maxSize,
-		StartDate: startDate,
-		EndDate:   endDate,
-	}
-
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 50
-	}
-	offset := (page - 1) * limit
-
-	results, total, err := c.Database.Search(key, matchType, searchInput, limit, offset, filters)
+	results, total, err := c.Database.Search(params.Key, params.MatchType, params.SearchInput, params.Limit, params.Offset, params.Filters)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -44,8 +19,8 @@ func (c *Controller) APISearch(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"results":     results,
 		"total":       total,
-		"currentPage": page,
-		"totalPages":  (total + int64(limit) - 1) / int64(limit),
+		"currentPage": params.Page,
+		"totalPages":  (total + int64(params.Limit) - 1) / int64(params.Limit),
 	})
 }
 
@@ -75,16 +50,7 @@ func (c *Controller) APICategories(ctx *gin.Context) {
 }
 
 func (c *Controller) APILatest(ctx *gin.Context) {
-	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "50"))
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 50
-	}
-	offset := (page - 1) * limit
+	page, limit, offset := c.parsePagination(ctx)
 
 	results, total, err := c.Database.GetLatest(limit, offset)
 	if err != nil {

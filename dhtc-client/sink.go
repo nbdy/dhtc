@@ -1,9 +1,10 @@
 package dhtc_client
 
 import (
-	"github.com/rs/zerolog/log"
 	"net"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 func NewSink(deadline time.Duration, maxNLeeches int, maxConcurrentDownloads int) *Sink {
@@ -106,7 +107,6 @@ func (ms *Sink) onLeechError(infoHash []byte, err error) {
 		ms.incomingInfoHashes[string(infoHash)] = ms.incomingInfoHashes[string(infoHash)][1:]
 		go ms.download(infoHash, peer)
 	} else {
-		ms.deleted++
 		delete(ms.incomingInfoHashes, string(infoHash))
 	}
 }

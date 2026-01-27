@@ -83,6 +83,4 @@ type Sink struct {
 
 	terminated  bool
 	termination chan interface{}
-
-	deleted int
 }

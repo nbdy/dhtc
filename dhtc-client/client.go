@@ -6,14 +6,15 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"github.com/anacrolix/torrent/bencode"
-	"github.com/anacrolix/torrent/metainfo"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"io"
 	"math"
 	"net"
 	"time"
+
+	"github.com/anacrolix/torrent/bencode"
+	"github.com/anacrolix/torrent/metainfo"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 const MaxMetadataSize = 10 * 1024 * 1024

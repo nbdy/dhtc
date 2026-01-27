@@ -23,10 +23,10 @@
                 <input type="hidden" name="op" value="add">
                 <div class="flex flex-col lg:flex-row gap-4 items-end">
                     <div class="form-control w-full lg:w-48">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="watch-key">
                             <span class="label-text font-semibold text-xs">Field</span>
                         </label>
-                        <select class="select select-bordered select-sm w-full pr-10" name="key">
+                        <select id="watch-key" class="select select-bordered select-sm w-full pr-10" name="key">
                             <option value="Name" selected>Name</option>
                             <option value="InfoHash">Info hash</option>
                             <option value="Files">File name</option>
@@ -35,10 +35,10 @@
                     </div>
 
                     <div class="form-control w-full lg:w-48">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="watch-match-type">
                             <span class="label-text font-semibold text-xs">Match Type</span>
                         </label>
-                        <select class="select select-bordered select-sm w-full pr-10" name="match-type">
+                        <select id="watch-match-type" class="select select-bordered select-sm w-full pr-10" name="match-type">
                             <option value="contains" selected>contains</option>
                             <option value="equals">equals</option>
                             <option value="startswith">starts with</option>
@@ -47,11 +47,11 @@
                     </div>
 
                     <div class="form-control flex-grow w-full">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="watch-content">
                             <span class="label-text font-semibold text-xs">Content</span>
                         </label>
                         <div class="join w-full">
-                            <input type="text" placeholder="Content to watch for..." class="input input-bordered input-sm join-item w-full" name="search-input" required />
+                            <input id="watch-content" type="text" placeholder="Content to watch for..." class="input input-bordered input-sm join-item w-full" name="search-input" required />
                             <button class="btn btn-primary btn-sm join-item px-6" type="submit">Add Watch</button>
                         </div>
                     </div>

@@ -1,9 +1,10 @@
 package dhtc_client
 
 import (
-	"github.com/rs/zerolog/log"
 	"net"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Service interface {

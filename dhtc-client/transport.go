@@ -2,10 +2,11 @@ package dhtc_client
 
 import (
 	"context"
+	"net"
+
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/time/rate"
-	"net"
 )
 
 type sendRequest struct {
@@ -13,6 +14,7 @@ type sendRequest struct {
 	addr *net.UDPAddr
 }
 
+// Transport represents a DHT transport layer.
 type Transport struct {
 	fd      *net.UDPConn
 	laddr   *net.UDPAddr
@@ -30,6 +32,7 @@ type Transport struct {
 	onCongestion func()
 }
 
+// NewTransport creates a new DHT transport layer.
 func NewTransport(laddr string, rateLimit int, onMessage func(*Message, *net.UDPAddr), onCongestion func()) *Transport {
 	t := new(Transport)
 	/*   The field size sets a theoretical limit of 65,535 bytes (8 byte header + 65,527 bytes of
@@ -62,6 +65,7 @@ func NewTransport(laddr string, rateLimit int, onMessage func(*Message, *net.UDP
 	return t
 }
 
+// Start starts the DHT transport layer.
 func (t *Transport) Start() {
 	// Why check whether the Transport `t` started or not, here and not -for instance- in
 	// t.Terminate()?
@@ -88,6 +92,7 @@ func (t *Transport) Start() {
 	go t.sendLoop()
 }
 
+// Terminate terminates the DHT transport layer.
 func (t *Transport) Terminate() {
 	_ = t.fd.Close()
 	close(t.sendChan)
@@ -116,6 +121,7 @@ func (t *Transport) readMessages() {
 	}
 }
 
+// WriteMessages writes a KRPC message to the specified address.
 func (t *Transport) WriteMessages(msg *Message, addr *net.UDPAddr) {
 	select {
 	case t.sendChan <- sendRequest{msg, addr}:

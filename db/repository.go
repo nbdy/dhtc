@@ -23,7 +23,6 @@ type Repository interface {
 
 	GetAllInfoHashes() ([]string, error)
 
-	GetStats(limit int) ([]Stats, error)
 	GetStatsByInterval(interval string, limit int) ([]Stats, error)
 	InsertStats(stats Stats) error
 

@@ -28,11 +28,14 @@
             <div class="card-body p-4 sm:p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="card-title text-lg">Discovery Timeline</h2>
-                    <select id="granularitySelector" class="select select-bordered select-sm w-fit pr-10">
-                        <option value="minute">Last Hour (Minutely)</option>
-                        <option value="hour" selected>Last 24 Hours (Hourly)</option>
-                        <option value="day">Last 30 Days (Daily)</option>
-                    </select>
+                    <div class="flex items-center gap-2">
+                        <label for="granularitySelector" class="label-text text-xs opacity-70">Interval:</label>
+                        <select id="granularitySelector" class="select select-bordered select-sm w-fit pr-10">
+                            <option value="minute">Last Hour (Minutely)</option>
+                            <option value="hour" selected>Last 24 Hours (Hourly)</option>
+                            <option value="day">Last 30 Days (Daily)</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="discoveryChartPlaceholder" class="flex flex-col items-center justify-center h-[400px] opacity-40 {{ if gt .info_hash_count 0 }}hidden{{ end }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
@@ -87,7 +90,7 @@
                     const counts = stats.map(s => s.TorrentCount);
 
                     updateDiscoveryChart(labels, counts);
-                    
+
                     document.getElementById('discoveryChartPlaceholder').classList.add('hidden');
                     const canvas = document.getElementById('discoveryChart');
                     if (canvas && canvas.parentElement) canvas.parentElement.classList.remove('hidden');
