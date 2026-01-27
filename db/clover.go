@@ -4,14 +4,15 @@ import (
 	"dhtc/config"
 	dhtcclient "dhtc/dhtc-client"
 	"encoding/hex"
-	"github.com/ostafen/clover/v2"
-	"github.com/ostafen/clover/v2/document"
-	"github.com/ostafen/clover/v2/query"
-	"github.com/rs/zerolog/log"
 	"math/rand"
 	"os"
 	"regexp"
 	"time"
+
+	"github.com/ostafen/clover/v2"
+	"github.com/ostafen/clover/v2/document"
+	"github.com/ostafen/clover/v2/query"
+	"github.com/rs/zerolog/log"
 )
 
 type CloverRepository struct {
@@ -90,7 +91,7 @@ func (r *CloverRepository) GetNRandomEntries(N int) []MetaData {
 	all, _ := r.db.FindAll(query.NewQuery(TorrentTable))
 	rVal := make([]*document.Document, N)
 	for i := 0; i < N; i++ {
-		rVal[i] = all[rand.Intn(count)]
+		rVal[i] = all[rand.Intn(count)] //nolint:gosec // weak random number generator is fine for this use case
 	}
 	return Documents2MetaData(rVal)
 }
@@ -222,22 +223,6 @@ func (r *CloverRepository) GetAllInfoHashes() ([]string, error) {
 		res[i] = d.Get("InfoHash").(string)
 	}
 	return res, nil
-}
-
-func (r *CloverRepository) GetStats(limit int) ([]Stats, error) {
-	q := query.NewQuery(StatsTable).Sort(query.SortOption{Field: "Timestamp", Direction: -1}).Limit(limit)
-	docs, err := r.db.FindAll(q)
-	if err != nil {
-		return nil, err
-	}
-	rVal := make([]Stats, len(docs))
-	for i, doc := range docs {
-		rVal[i] = Stats{
-			Timestamp:    doc.Get("Timestamp").(time.Time),
-			TorrentCount: doc.Get("TorrentCount").(int64),
-		}
-	}
-	return rVal, nil
 }
 
 func (r *CloverRepository) GetStatsByInterval(interval string, limit int) ([]Stats, error) {

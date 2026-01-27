@@ -9,10 +9,10 @@
 <script>
     const socket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/trawl');
     const tableBody = document.querySelector('#trawl-table tbody');
-    const transmissionEnabled = {{ if .config.TransmissionURL }}true{{ else }}false{{ end }};
-    const aria2Enabled = {{ if .config.Aria2URL }}true{{ else }}false{{ end }};
-    const delugeEnabled = {{ if .config.DelugeURL }}true{{ else }}false{{ end }};
-    const qbittorrentEnabled = {{ if .config.QBittorrentURL }}true{{ else }}false{{ end }};
+    const transmissionEnabled = {{ if .config.TransmissionURL }}true{{ else }}false{{ end }}
+    const aria2Enabled = {{ if .config.Aria2URL }}true{{ else }}false{{ end }}
+    const delugeEnabled = {{ if .config.DelugeURL }}true{{ else }}false{{ end }}
+    const qbittorrentEnabled = {{ if .config.QBittorrentURL }}true{{ else }}false{{ end }}
 
     const maxItemsSelect = document.getElementById('max-items');
     let maxItems = parseInt(localStorage.getItem('trawl-max-items')) || 100;
@@ -34,7 +34,7 @@
         const md = JSON.parse(event.data);
         const row = document.createElement('tr');
         row.className = 'hover transition-all duration-500 bg-primary/10';
-        
+
         // Format size
         const size = formatBytes(md.TotalSize);
         const date = new Date(md.DiscoveredOn * 1000).toLocaleString();
@@ -45,7 +45,7 @@
             <div class="join join-vertical md:join-horizontal">
                 <a href="${magnet}" class="btn btn-info btn-xs join-item" title="Open magnet link">Open</a>
         `;
-        
+
         if (transmissionEnabled) {
             actionHtml += `<button class="btn btn-secondary btn-xs join-item" onclick="sendToDownloader('transmission', '${magnet}')" title="Send to Transmission">T</button>`;
         }
@@ -58,11 +58,11 @@
         if (qbittorrentEnabled) {
             actionHtml += `<button class="btn btn-warning btn-xs join-item" onclick="sendToDownloader('qbittorrent', '${magnet}')" title="Send to qBittorrent">Q</button>`;
         }
-        
+
         actionHtml += `</div>`;
 
         const categoriesHtml = md.Categories ? md.Categories.map(cat => `<div class="badge badge-outline badge-sm">${cat}</div>`).join('') : '';
-        
+
         row.innerHTML = `
             <td class="whitespace-normal break-all font-medium">${md.Name}</td>
             <td class="hidden md:table-cell"><div class="flex flex-wrap gap-1">${categoriesHtml}</div></td>
@@ -71,7 +71,7 @@
             <td class="hidden sm:table-cell whitespace-nowrap opacity-70 text-sm">${date}</td>
             <td class="text-right">${actionHtml}</td>
         `;
-        
+
         if (tableBody.firstChild) {
             tableBody.insertBefore(row, tableBody.firstChild);
         } else {
@@ -105,7 +105,7 @@
             <p class="text-base-content/60">Live view of incoming torrents from the DHT network</p>
         </div>
         <div class="form-control w-fit self-end md:self-auto">
-            <label class="label">
+            <label class="label" for="max-items">
                 <span class="label-text font-bold">Max items</span>
             </label>
             <select id="max-items" class="select select-bordered select-sm w-fit pr-10">
@@ -118,7 +118,7 @@
             </select>
         </div>
     </div>
-    
+
     <div class="card bg-base-100 shadow-xl overflow-hidden">
         <div class="overflow-x-auto">
             <table id="trawl-table" class="table table-zebra w-full sortable">

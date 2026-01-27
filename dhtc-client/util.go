@@ -7,9 +7,9 @@ import (
 )
 
 func randomDigit() byte {
-	var max, min int
-	max, min = '9', '0'
-	return byte(rand.Intn(max-min) + min)
+	var high, low int
+	high, low = '9', '0'
+	return byte(rand.Intn(high-low) + low) //nolint:gosec // weak random number generator is fine for this use case
 }
 
 func randomID() []byte {

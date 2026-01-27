@@ -5,15 +5,16 @@ import (
 	dhtcclient "dhtc/dhtc-client"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"regexp"
-	"strings"
-	"time"
 )
 
 type GormTorrent struct {
@@ -367,22 +368,6 @@ func (r *GormRepository) GetAllInfoHashes() ([]string, error) {
 	var hashes []string
 	err := r.db.Model(&GormTorrent{}).Pluck("info_hash", &hashes).Error
 	return hashes, err
-}
-
-func (r *GormRepository) GetStats(limit int) ([]Stats, error) {
-	var gormStats []GormStats
-	err := r.db.Order("timestamp desc").Limit(limit).Find(&gormStats).Error
-	if err != nil {
-		return nil, err
-	}
-	stats := make([]Stats, len(gormStats))
-	for i, s := range gormStats {
-		stats[i] = Stats{
-			Timestamp:    s.Timestamp,
-			TorrentCount: s.TorrentCount,
-		}
-	}
-	return stats, nil
 }
 
 func (r *GormRepository) GetStatsByInterval(interval string, limit int) ([]Stats, error) {

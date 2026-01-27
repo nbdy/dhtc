@@ -20,10 +20,10 @@
             <form action="/search" method="post">
                 <div class="flex flex-col lg:flex-row gap-4 items-end mb-4">
                     <div class="form-control w-full lg:w-48">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="search-key">
                             <span class="label-text font-semibold">Field</span>
                         </label>
-                        <select class="select select-bordered select-sm w-full pr-10" name="key">
+                        <select id="search-key" class="select select-bordered select-sm w-full pr-10" name="key">
                             <option value="All" {{ if eq .key "All" }}selected{{ end }}>All</option>
                             <option value="Name" {{ if eq .key "Name" }}selected{{ end }}>Name</option>
                             <option value="InfoHash" {{ if eq .key "InfoHash" }}selected{{ end }}>Info hash</option>
@@ -33,10 +33,10 @@
                     </div>
 
                     <div class="form-control w-full lg:w-48">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="match-type">
                             <span class="label-text font-semibold">Match Type</span>
                         </label>
-                        <select class="select select-bordered select-sm w-full pr-10" name="match-type">
+                        <select id="match-type" class="select select-bordered select-sm w-full pr-10" name="match-type">
                             <option value="contains" {{ if eq .matchType "contains" }}selected{{ end }}>contains</option>
                             <option value="equals" {{ if eq .matchType "equals" }}selected{{ end }}>equals</option>
                             <option value="startswith" {{ if eq .matchType "startswith" }}selected{{ end }}>starts with</option>
@@ -45,46 +45,46 @@
                     </div>
 
                     <div class="form-control flex-grow w-full">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="search-input">
                             <span class="label-text font-semibold">Search Query</span>
                         </label>
                         <div class="join w-full">
-                            <input type="text" placeholder="Search..." class="input input-bordered input-sm join-item w-full" name="search-input" value="{{.searchInput}}" />
+                            <input id="search-input" type="text" placeholder="Search..." class="input input-bordered input-sm join-item w-full" name="search-input" value="{{.searchInput}}" />
                             <button class="btn btn-primary btn-sm join-item px-6" type="submit">Search</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="collapse collapse-plus bg-base-200/30 border border-base-300 rounded-lg">
-                    <input type="checkbox" />
-                    <div class="collapse-title text-sm font-medium py-2 min-h-0">
+                    <input id="advanced-filters-toggle" type="checkbox" />
+                    <label for="advanced-filters-toggle" class="collapse-title text-sm font-medium py-2 min-h-0">
                         Advanced Filters
-                    </div>
+                    </label>
                     <div class="collapse-content">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                             <div class="form-control w-full">
-                                <label class="label">
+                                <label class="label" for="min-size">
                                     <span class="label-text text-xs">Min Size (bytes)</span>
                                 </label>
-                                <input type="number" name="min-size" class="input input-bordered input-sm" value="{{.minSize}}" />
+                                <input id="min-size" type="number" name="min-size" class="input input-bordered input-sm" value="{{.minSize}}" />
                             </div>
                             <div class="form-control w-full">
-                                <label class="label">
+                                <label class="label" for="max-size">
                                     <span class="label-text text-xs">Max Size (bytes)</span>
                                 </label>
-                                <input type="number" name="max-size" class="input input-bordered input-sm" value="{{.maxSize}}" />
+                                <input id="max-size" type="number" name="max-size" class="input input-bordered input-sm" value="{{.maxSize}}" />
                             </div>
                             <div class="form-control w-full">
-                                <label class="label">
+                                <label class="label" for="start-date-val">
                                     <span class="label-text text-xs">Start Date</span>
                                 </label>
-                                <input type="date" name="start-date-val" class="input input-bordered input-sm" value="{{.startDateVal}}" />
+                                <input id="start-date-val" type="date" name="start-date-val" class="input input-bordered input-sm" value="{{.startDateVal}}" />
                             </div>
                             <div class="form-control w-full">
-                                <label class="label">
+                                <label class="label" for="end-date-val">
                                     <span class="label-text text-xs">End Date</span>
                                 </label>
-                                <input type="date" name="end-date-val" class="input input-bordered input-sm" value="{{.endDateVal}}" />
+                                <input id="end-date-val" type="date" name="end-date-val" class="input input-bordered input-sm" value="{{.endDateVal}}" />
                             </div>
                         </div>
                     </div>

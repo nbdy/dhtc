@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha1"
-	"github.com/rs/zerolog/log"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
+// Protocol represents a DHT protocol handler.
 type Protocol struct {
 	previousTokenSecret, currentTokenSecret []byte
 	tokenLock                               sync.Mutex
@@ -18,22 +20,33 @@ type Protocol struct {
 	started                                 bool
 }
 
+// ProtocolEventHandlers contains the callback functions for various DHT events.
 type ProtocolEventHandlers struct {
-	OnPingQuery                  func(*Message, *net.UDPAddr)
-	OnFindNodeQuery              func(*Message, *net.UDPAddr)
-	OnGetPeersQuery              func(*Message, *net.UDPAddr)
-	OnAnnouncePeerQuery          func(*Message, *net.UDPAddr)
-	OnGetPeersResponse           func(*Message, *net.UDPAddr)
-	OnFindNodeResponse           func(*Message, *net.UDPAddr)
+	// OnPingQuery is called when a ping query is received.
+	OnPingQuery func(*Message, *net.UDPAddr)
+	// OnFindNodeQuery is called when a find_node query is received.
+	OnFindNodeQuery func(*Message, *net.UDPAddr)
+	// OnGetPeersQuery is called when a get_peers query is received.
+	OnGetPeersQuery func(*Message, *net.UDPAddr)
+	// OnAnnouncePeerQuery is called when an announce_peer query is received.
+	OnAnnouncePeerQuery func(*Message, *net.UDPAddr)
+	// OnGetPeersResponse is called when a get_peers response is received.
+	OnGetPeersResponse func(*Message, *net.UDPAddr)
+	// OnFindNodeResponse is called when a find_node response is received.
+	OnFindNodeResponse func(*Message, *net.UDPAddr)
+	// OnPingORAnnouncePeerResponse is called when a ping or announce_peer response is received.
 	OnPingORAnnouncePeerResponse func(*Message, *net.UDPAddr)
 
-	// Added by BEP 51
-	OnSampleInfohashesQuery    func(*Message, *net.UDPAddr)
+	// OnSampleInfohashesQuery is called when a sample_infohashes query is received (BEP 51).
+	OnSampleInfohashesQuery func(*Message, *net.UDPAddr)
+	// OnSampleInfohashesResponse is called when a sample_infohashes response is received (BEP 51).
 	OnSampleInfohashesResponse func(*Message, *net.UDPAddr)
 
+	// OnCongestion is called when congestion is detected.
 	OnCongestion func()
 }
 
+// NewProtocol creates a new DHT protocol handler.
 func NewProtocol(laddr string, rateLimit int, eventHandlers ProtocolEventHandlers) (p *Protocol) {
 	p = new(Protocol)
 	p.eventHandlers = eventHandlers
@@ -50,6 +63,7 @@ func NewProtocol(laddr string, rateLimit int, eventHandlers ProtocolEventHandler
 	return
 }
 
+// Start starts the DHT protocol handler.
 func (p *Protocol) Start() {
 	if p.started {
 		log.Panic().Msg("Attempting to Start() a mainline/Protocol that has been already started! (Programmer error.)")
@@ -60,6 +74,7 @@ func (p *Protocol) Start() {
 	go p.updateTokenSecret()
 }
 
+// Terminate terminates the DHT protocol handler.
 func (p *Protocol) Terminate() {
 	if !p.started {
 		log.Panic().Msg("Attempted to Terminate() a mainline/Protocol that has not been Start()ed! (Programmer error.)")
@@ -187,21 +202,12 @@ func (p *Protocol) onMessage(msg *Message, addr *net.UDPAddr) {
 	}
 }
 
+// SendMessage sends a KRPC message to the specified address.
 func (p *Protocol) SendMessage(msg *Message, addr *net.UDPAddr) {
 	p.transport.WriteMessages(msg, addr)
 }
 
-func NewPingQuery(id []byte) *Message {
-	return &Message{
-		Y: "q",
-		T: []byte("aa"),
-		Q: "ping",
-		A: QueryArguments{
-			ID: id,
-		},
-	}
-}
-
+// NewFindNodeQuery creates a new find_node query message.
 func NewFindNodeQuery(id []byte, target []byte) *Message {
 	return &Message{
 		Y: "q",
@@ -214,6 +220,7 @@ func NewFindNodeQuery(id []byte, target []byte) *Message {
 	}
 }
 
+// NewGetPeersQuery creates a new get_peers query message.
 func NewGetPeersQuery(id []byte, infoHash []byte) *Message {
 	return &Message{
 		Y: "q",
@@ -226,25 +233,7 @@ func NewGetPeersQuery(id []byte, infoHash []byte) *Message {
 	}
 }
 
-func NewAnnouncePeerQuery(id []byte, impliedPort bool, infoHash []byte, port uint16, token []byte) *Message {
-	ip := 0
-	if impliedPort {
-		ip = 1
-	}
-	return &Message{
-		Y: "q",
-		T: []byte("aa"),
-		Q: "announce_peer",
-		A: QueryArguments{
-			ID:          id,
-			ImpliedPort: ip,
-			InfoHash:    infoHash,
-			Port:        int(port),
-			Token:       token,
-		},
-	}
-}
-
+// NewSampleInfohashesQuery creates a new sample_infohashes query message.
 func NewSampleInfohashesQuery(id []byte, t []byte, target []byte) *Message {
 	return &Message{
 		Y: "q",
@@ -257,56 +246,7 @@ func NewSampleInfohashesQuery(id []byte, t []byte, target []byte) *Message {
 	}
 }
 
-func NewPingResponse(t []byte, id []byte) *Message {
-	return &Message{
-		Y: "r",
-		T: t,
-		R: ResponseValues{
-			ID: id,
-		},
-	}
-}
-
-func NewFindNodeResponse(t []byte, id []byte, nodes CompactNodeInfos) *Message {
-	return &Message{
-		Y: "r",
-		T: t,
-		R: ResponseValues{
-			ID:    id,
-			Nodes: nodes,
-		},
-	}
-}
-
-func NewGetPeersResponseWithValues(t []byte, id []byte, token []byte, values []CompactPeer) *Message {
-	return &Message{
-		Y: "r",
-		T: t,
-		R: ResponseValues{
-			ID:     id,
-			Token:  token,
-			Values: values,
-		},
-	}
-}
-
-func NewGetPeersResponseWithNodes(t []byte, id []byte, token []byte, nodes CompactNodeInfos) *Message {
-	return &Message{
-		Y: "r",
-		T: t,
-		R: ResponseValues{
-			ID:    id,
-			Token: token,
-			Nodes: nodes,
-		},
-	}
-}
-
-func NewAnnouncePeerResponse(t []byte, id []byte) *Message {
-	// Because they are indistinguishable.
-	return NewPingResponse(t, id)
-}
-
+// NewSampleInfohashesResponse creates a new sample_infohashes response message.
 func NewSampleInfohashesResponse(t []byte, id []byte, interval int, nodes CompactNodeInfos, nodes6 CompactNodeInfos, num int, samples []byte) *Message {
 	return &Message{
 		Y: "r",
@@ -322,6 +262,7 @@ func NewSampleInfohashesResponse(t []byte, id []byte, interval int, nodes Compac
 	}
 }
 
+// CalculateToken calculates a token for the specified address.
 func (p *Protocol) CalculateToken(address net.IP) []byte {
 	p.tokenLock.Lock()
 	defer p.tokenLock.Unlock()
@@ -329,6 +270,7 @@ func (p *Protocol) CalculateToken(address net.IP) []byte {
 	return sum[:]
 }
 
+// VerifyToken verifies the token for the specified address.
 func (p *Protocol) VerifyToken(address net.IP, token []byte) bool {
 	p.tokenLock.Lock()
 	defer p.tokenLock.Unlock()

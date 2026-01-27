@@ -3,10 +3,11 @@ package dhtc_client
 import (
 	"container/list"
 	"crypto/rand"
-	"github.com/rs/zerolog/log"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type IndexingService struct {
@@ -21,7 +22,6 @@ type IndexingService struct {
 	lastSeen          map[string]time.Time
 	lruList           *list.List
 	lruElements       map[string]*list.Element
-	nodeBlacklist     map[string]time.Time
 	routingTableMutex sync.RWMutex
 	maxNeighbors      uint
 
@@ -64,7 +64,6 @@ func NewIndexingService(laddr string, interval time.Duration, maxNeighbors uint,
 	service.lastSeen = make(map[string]time.Time)
 	service.lruList = list.New()
 	service.lruElements = make(map[string]*list.Element)
-	service.nodeBlacklist = make(map[string]time.Time)
 	service.maxNeighbors = maxNeighbors
 	service.eventHandlers = eventHandlers
 
@@ -120,12 +119,6 @@ func (is *IndexingService) index(nodes []string) {
 				}
 			}
 
-			// Prune node blacklist (keep for 24 hours)
-			for ip, blacklistedAt := range is.nodeBlacklist {
-				if time.Since(blacklistedAt) > 24*time.Hour {
-					delete(is.nodeBlacklist, ip)
-				}
-			}
 			is.routingTableMutex.Unlock()
 		}
 	}
@@ -177,24 +170,6 @@ func (is *IndexingService) findNeighbors() {
 	}
 }
 
-func (is *IndexingService) BlacklistNode(ip string) {
-	is.routingTableMutex.Lock()
-	defer is.routingTableMutex.Unlock()
-	is.nodeBlacklist[ip] = time.Now()
-
-	// Remove all nodes with this IP from routing table
-	for id, addr := range is.routingTable {
-		if addr.IP.String() == ip {
-			if element, ok := is.lruElements[id]; ok {
-				is.lruList.Remove(element)
-				delete(is.lruElements, id)
-			}
-			delete(is.routingTable, id)
-			delete(is.lastSeen, id)
-		}
-	}
-}
-
 func (is *IndexingService) addNode(id []byte, addr *net.UDPAddr) {
 	if addr.Port == 0 {
 		return
@@ -202,11 +177,6 @@ func (is *IndexingService) addNode(id []byte, addr *net.UDPAddr) {
 
 	is.routingTableMutex.Lock()
 	defer is.routingTableMutex.Unlock()
-
-	saddr := addr.IP.String()
-	if _, blacklisted := is.nodeBlacklist[saddr]; blacklisted {
-		return
-	}
 
 	sid := string(id)
 	if _, exists := is.routingTable[sid]; exists {

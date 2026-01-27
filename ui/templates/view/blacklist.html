@@ -29,17 +29,17 @@
                 <input type="hidden" name="op" value="add">
                 <div class="flex flex-col lg:flex-row gap-4 items-end">
                     <div class="form-control flex-grow w-full">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="blacklist-filter">
                             <span class="label-text font-semibold text-xs">Regex Filter</span>
                         </label>
-                        <input type="text" placeholder="Regex (e.g. .*spam.*)" class="input input-bordered input-sm w-full" name="Filter" required />
+                        <input id="blacklist-filter" type="text" placeholder="Regex (e.g. .*spam.*)" class="input input-bordered input-sm w-full" name="Filter" required />
                     </div>
 
                     <div class="form-control w-full lg:w-48">
-                        <label class="label pt-0">
+                        <label class="label pt-0" for="blacklist-type">
                             <span class="label-text font-semibold text-xs">Type</span>
                         </label>
-                        <select class="select select-bordered select-sm w-full pr-10" name="Type">
+                        <select id="blacklist-type" class="select select-bordered select-sm w-full pr-10" name="Type">
                             <option value="0" selected>Name</option>
                             <option value="1">File name</option>
                         </select>

@@ -160,3 +160,40 @@ func TestError_Bencode(t *testing.T) {
 		t.Errorf("expected message %s, got %s", e.Message, e2.Message)
 	}
 }
+
+func TestCompactPeers_Bencode(t *testing.T) {
+	cps := CompactPeers{
+		{IP: net.ParseIP("1.2.3.4"), Port: 1234},
+		{IP: net.ParseIP("2001:db8::1"), Port: 5678},
+	}
+
+	b, err := cps.MarshalBencode()
+	if err != nil {
+		t.Fatalf("MarshalBencode() error = %v", err)
+	}
+
+	var cps2 CompactPeers
+	if err := cps2.UnmarshalBencode(b); err != nil {
+		t.Fatalf("UnmarshalBencode() error = %v", err)
+	}
+
+	if len(cps2) != len(cps) {
+		t.Errorf("expected length %d, got %d", len(cps), len(cps2))
+	}
+
+	// Test unmarshal from single string (IPv4 only to avoid ambiguity)
+	cps4 := CompactPeers{
+		{IP: net.ParseIP("1.2.3.4"), Port: 1234},
+		{IP: net.ParseIP("5.6.7.8"), Port: 5678},
+	}
+	singleString := append(cps4[0].MarshalBinary(), cps4[1].MarshalBinary()...)
+	// Manually bencode a string
+	bString := append([]byte("12:"), singleString...)
+	var cps5 CompactPeers
+	if err := cps5.UnmarshalBencode(bString); err != nil {
+		t.Fatalf("UnmarshalBencode from string error = %v", err)
+	}
+	if len(cps5) != 2 {
+		t.Errorf("expected length 2, got %d", len(cps5))
+	}
+}

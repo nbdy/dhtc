@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+type Client interface {
+	AddMagnet(magnet string) error
+}
+
 type TransmissionClient struct {
 	URL       string
 	User      string
@@ -25,36 +29,48 @@ func (c *TransmissionClient) AddMagnet(magnet string) error {
 	}
 
 	for i := 0; i < 2; i++ {
-		body, _ := json.Marshal(payload)
-		req, err := http.NewRequest("POST", c.URL, bytes.NewBuffer(body))
-		if err != nil {
-			return err
+		err := func() error {
+			body, _ := json.Marshal(payload)
+			req, err := http.NewRequest("POST", c.URL, bytes.NewBuffer(body))
+			if err != nil {
+				return err
+			}
+
+			if c.User != "" {
+				req.SetBasicAuth(c.User, c.Pass)
+			}
+			if c.SessionID != "" {
+				req.Header.Set("X-Transmission-Session-Id", c.SessionID)
+			}
+
+			client := &http.Client{Timeout: 5 * time.Second}
+			resp, err := client.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode == http.StatusConflict {
+				c.SessionID = resp.Header.Get("X-Transmission-Session-Id")
+				return fmt.Errorf("conflict")
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("transmission returned status %d", resp.StatusCode)
+			}
+
+			return nil
+		}()
+
+		if err == nil {
+			return nil
 		}
 
-		if c.User != "" {
-			req.SetBasicAuth(c.User, c.Pass)
-		}
-		if c.SessionID != "" {
-			req.Header.Set("X-Transmission-Session-Id", c.SessionID)
-		}
-
-		client := &http.Client{Timeout: 5 * time.Second}
-		resp, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusConflict {
-			c.SessionID = resp.Header.Get("X-Transmission-Session-Id")
+		if err.Error() == "conflict" {
 			continue
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("transmission returned status %d", resp.StatusCode)
-		}
-
-		return nil
+		return err
 	}
 
 	return fmt.Errorf("failed to get transmission session id")
@@ -66,7 +82,7 @@ type Aria2Client struct {
 }
 
 func (c *Aria2Client) AddMagnet(magnet string) error {
-	params := []interface{}{}
+	var params []interface{}
 	if c.Token != "" {
 		params = append(params, "token:"+c.Token)
 	}

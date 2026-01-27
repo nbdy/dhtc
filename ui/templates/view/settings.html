@@ -36,10 +36,10 @@
                     <h2 class="card-title text-2xl">Appearance</h2>
                 </div>
                 <div class="form-control w-full max-w-xs">
-                    <label class="label">
+                    <label class="label" for="theme-selector">
                         <span class="label-text font-semibold">Interface Theme</span>
                     </label>
-                    <select class="select select-bordered w-full" onchange="document.documentElement.setAttribute('data-theme', this.value); localStorage.setItem('theme', this.value);">
+                    <select id="theme-selector" class="select select-bordered w-full" onchange="document.documentElement.setAttribute('data-theme', this.value); localStorage.setItem('theme', this.value);">
                         <option disabled selected>Pick a theme</option>
                         <option value="dark">Dark</option>
                         <option value="light">Light</option>
@@ -121,24 +121,24 @@
                         <div class="divider">Paths</div>
 
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="BootstrapNodeFile">
                                 <span class="label-text font-semibold">Bootstrap Nodes File</span>
                             </label>
-                            <input type="text" name="BootstrapNodeFile" value="{{ .config.BootstrapNodeFile }}" class="input input-bordered w-full" />
+                            <input id="BootstrapNodeFile" type="text" name="BootstrapNodeFile" value="{{ .config.BootstrapNodeFile }}" class="input input-bordered w-full" />
                         </div>
 
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="NameBlacklist">
                                 <span class="label-text font-semibold">Name Blacklist File</span>
                             </label>
-                            <input type="text" name="NameBlacklist" value="{{ .config.NameBlacklist }}" class="input input-bordered w-full" />
+                            <input id="NameBlacklist" type="text" name="NameBlacklist" value="{{ .config.NameBlacklist }}" class="input input-bordered w-full" />
                         </div>
 
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="FileBlacklist">
                                 <span class="label-text font-semibold">File Blacklist File</span>
                             </label>
-                            <input type="text" name="FileBlacklist" value="{{ .config.FileBlacklist }}" class="input input-bordered w-full" />
+                            <input id="FileBlacklist" type="text" name="FileBlacklist" value="{{ .config.FileBlacklist }}" class="input input-bordered w-full" />
                         </div>
                     </div>
                 </div>
@@ -154,40 +154,40 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="CrawlerThreads">
                                 <span class="label-text font-semibold">Crawler Threads</span>
                             </label>
-                            <input type="number" name="CrawlerThreads" value="{{ .config.CrawlerThreads }}" class="input input-bordered w-full" />
+                            <input id="CrawlerThreads" type="number" name="CrawlerThreads" value="{{ .config.CrawlerThreads }}" class="input input-bordered w-full" />
                         </div>
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="RateLimit">
                                 <span class="label-text font-semibold">Rate Limit</span>
                             </label>
-                            <input type="number" name="RateLimit" value="{{ .config.RateLimit }}" class="input input-bordered w-full" />
+                            <input id="RateLimit" type="number" name="RateLimit" value="{{ .config.RateLimit }}" class="input input-bordered w-full" />
                         </div>
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="MaxNeighbors">
                                 <span class="label-text font-semibold">Max. Neighbors</span>
                             </label>
-                            <input type="number" name="MaxNeighbors" value="{{ .config.MaxNeighbors }}" class="input input-bordered w-full" />
+                            <input id="MaxNeighbors" type="number" name="MaxNeighbors" value="{{ .config.MaxNeighbors }}" class="input input-bordered w-full" />
                         </div>
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="MaxLeeches">
                                 <span class="label-text font-semibold">Max. Leeches</span>
                             </label>
-                            <input type="number" name="MaxLeeches" value="{{ .config.MaxLeeches }}" class="input input-bordered w-full" />
+                            <input id="MaxLeeches" type="number" name="MaxLeeches" value="{{ .config.MaxLeeches }}" class="input input-bordered w-full" />
                         </div>
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="MaxConcurrentDownloads">
                                 <span class="label-text font-semibold">Max. Concurrent Downloads</span>
                             </label>
-                            <input type="number" name="MaxConcurrentDownloads" value="{{ .config.MaxConcurrentDownloads }}" class="input input-bordered w-full" />
+                            <input id="MaxConcurrentDownloads" type="number" name="MaxConcurrentDownloads" value="{{ .config.MaxConcurrentDownloads }}" class="input input-bordered w-full" />
                         </div>
                         <div class="form-control w-full">
-                            <label class="label">
+                            <label class="label" for="DrainTimeout">
                                 <span class="label-text font-semibold">Drain Timeout</span>
                             </label>
-                            <input type="text" name="DrainTimeout" value="{{ .config.DrainTimeout }}" class="input input-bordered w-full" placeholder="e.g. 5s" />
+                            <input id="DrainTimeout" type="text" name="DrainTimeout" value="{{ .config.DrainTimeout }}" class="input input-bordered w-full" placeholder="e.g. 5s" />
                         </div>
                     </div>
                 </div>
@@ -203,72 +203,72 @@
 
                     <div class="space-y-4">
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">Transmission</div>
+                            <input id="collapse-transmission" type="checkbox" />
+                            <label for="collapse-transmission" class="collapse-title font-bold">Transmission</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">RPC URL</span></label>
-                                    <input type="text" name="TransmissionURL" value="{{ .config.TransmissionURL }}" placeholder="http://localhost:9091/transmission/rpc" class="input input-bordered w-full" />
+                                    <label class="label" for="TransmissionURL"><span class="label-text">RPC URL</span></label>
+                                    <input id="TransmissionURL" type="text" name="TransmissionURL" value="{{ .config.TransmissionURL }}" placeholder="http://localhost:9091/transmission/rpc" class="input input-bordered w-full" />
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="form-control w-full">
-                                        <label class="label"><span class="label-text">Username</span></label>
-                                        <input type="text" name="TransmissionUser" value="{{ .config.TransmissionUser }}" class="input input-bordered w-full" />
+                                        <label class="label" for="TransmissionUser"><span class="label-text">Username</span></label>
+                                        <input id="TransmissionUser" type="text" name="TransmissionUser" value="{{ .config.TransmissionUser }}" class="input input-bordered w-full" />
                                     </div>
                                     <div class="form-control w-full">
-                                        <label class="label"><span class="label-text">Password</span></label>
-                                        <input type="password" name="TransmissionPass" value="{{ .config.TransmissionPass }}" class="input input-bordered w-full" />
+                                        <label class="label" for="TransmissionPass"><span class="label-text">Password</span></label>
+                                        <input id="TransmissionPass" type="password" name="TransmissionPass" value="{{ .config.TransmissionPass }}" class="input input-bordered w-full" />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">Aria2</div>
+                            <input id="collapse-aria2" type="checkbox" />
+                            <label for="collapse-aria2" class="collapse-title font-bold">Aria2</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">RPC URL</span></label>
-                                    <input type="text" name="Aria2URL" value="{{ .config.Aria2URL }}" placeholder="http://localhost:6800/jsonrpc" class="input input-bordered w-full" />
+                                    <label class="label" for="Aria2URL"><span class="label-text">RPC URL</span></label>
+                                    <input id="Aria2URL" type="text" name="Aria2URL" value="{{ .config.Aria2URL }}" placeholder="http://localhost:6800/jsonrpc" class="input input-bordered w-full" />
                                 </div>
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Secret Token</span></label>
-                                    <input type="password" name="Aria2Token" value="{{ .config.Aria2Token }}" class="input input-bordered w-full" />
+                                    <label class="label" for="Aria2Token"><span class="label-text">Secret Token</span></label>
+                                    <input id="Aria2Token" type="password" name="Aria2Token" value="{{ .config.Aria2Token }}" class="input input-bordered w-full" />
                                 </div>
                             </div>
                         </div>
 
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">Deluge</div>
+                            <input id="collapse-deluge" type="checkbox" />
+                            <label for="collapse-deluge" class="collapse-title font-bold">Deluge</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">JSON-RPC URL</span></label>
-                                    <input type="text" name="DelugeURL" value="{{ .config.DelugeURL }}" placeholder="http://localhost:8112/json" class="input input-bordered w-full" />
+                                    <label class="label" for="DelugeURL"><span class="label-text">JSON-RPC URL</span></label>
+                                    <input id="DelugeURL" type="text" name="DelugeURL" value="{{ .config.DelugeURL }}" placeholder="http://localhost:8112/json" class="input input-bordered w-full" />
                                 </div>
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Password</span></label>
-                                    <input type="password" name="DelugePass" value="{{ .config.DelugePass }}" class="input input-bordered w-full" />
+                                    <label class="label" for="DelugePass"><span class="label-text">Password</span></label>
+                                    <input id="DelugePass" type="password" name="DelugePass" value="{{ .config.DelugePass }}" class="input input-bordered w-full" />
                                 </div>
                             </div>
                         </div>
 
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">qBittorrent</div>
+                            <input id="collapse-qbittorrent" type="checkbox" />
+                            <label for="collapse-qbittorrent" class="collapse-title font-bold">qBittorrent</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Web UI URL</span></label>
-                                    <input type="text" name="QBittorrentURL" value="{{ .config.QBittorrentURL }}" placeholder="http://localhost:8080" class="input input-bordered w-full" />
+                                    <label class="label" for="QBittorrentURL"><span class="label-text">Web UI URL</span></label>
+                                    <input id="QBittorrentURL" type="text" name="QBittorrentURL" value="{{ .config.QBittorrentURL }}" placeholder="http://localhost:8080" class="input input-bordered w-full" />
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="form-control w-full">
-                                        <label class="label"><span class="label-text">Username</span></label>
-                                        <input type="text" name="QBittorrentUser" value="{{ .config.QBittorrentUser }}" class="input input-bordered w-full" />
+                                        <label class="label" for="QBittorrentUser"><span class="label-text">Username</span></label>
+                                        <input id="QBittorrentUser" type="text" name="QBittorrentUser" value="{{ .config.QBittorrentUser }}" class="input input-bordered w-full" />
                                     </div>
                                     <div class="form-control w-full">
-                                        <label class="label"><span class="label-text">Password</span></label>
-                                        <input type="password" name="QBittorrentPass" value="{{ .config.QBittorrentPass }}" class="input input-bordered w-full" />
+                                        <label class="label" for="QBittorrentPass"><span class="label-text">Password</span></label>
+                                        <input id="QBittorrentPass" type="password" name="QBittorrentPass" value="{{ .config.QBittorrentPass }}" class="input input-bordered w-full" />
                                     </div>
                                 </div>
                             </div>
@@ -287,53 +287,53 @@
 
                     <div class="space-y-4">
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">Telegram</div>
+                            <input id="collapse-telegram" type="checkbox" />
+                            <label for="collapse-telegram" class="collapse-title font-bold">Telegram</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Bot Token</span></label>
-                                    <input type="text" name="TelegramToken" value="{{ .config.TelegramToken }}" class="input input-bordered w-full" />
+                                    <label class="label" for="TelegramToken"><span class="label-text">Bot Token</span></label>
+                                    <input id="TelegramToken" type="text" name="TelegramToken" value="{{ .config.TelegramToken }}" class="input input-bordered w-full" />
                                 </div>
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Target Username</span></label>
-                                    <input type="text" name="TelegramUsername" value="{{ .config.TelegramUsername }}" class="input input-bordered w-full" />
+                                    <label class="label" for="TelegramUsername"><span class="label-text">Target Username</span></label>
+                                    <input id="TelegramUsername" type="text" name="TelegramUsername" value="{{ .config.TelegramUsername }}" class="input input-bordered w-full" />
                                 </div>
                             </div>
                         </div>
 
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">Discord</div>
+                            <input id="collapse-discord" type="checkbox" />
+                            <label for="collapse-discord" class="collapse-title font-bold">Discord</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Webhook URL</span></label>
-                                    <input type="text" name="DiscordWebhook" value="{{ .config.DiscordWebhook }}" class="input input-bordered w-full" />
+                                    <label class="label" for="DiscordWebhook"><span class="label-text">Webhook URL</span></label>
+                                    <input id="DiscordWebhook" type="text" name="DiscordWebhook" value="{{ .config.DiscordWebhook }}" class="input input-bordered w-full" />
                                 </div>
                             </div>
                         </div>
 
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">Slack</div>
+                            <input id="collapse-slack" type="checkbox" />
+                            <label for="collapse-slack" class="collapse-title font-bold">Slack</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Webhook URL</span></label>
-                                    <input type="text" name="SlackWebhook" value="{{ .config.SlackWebhook }}" class="input input-bordered w-full" />
+                                    <label class="label" for="SlackWebhook"><span class="label-text">Webhook URL</span></label>
+                                    <input id="SlackWebhook" type="text" name="SlackWebhook" value="{{ .config.SlackWebhook }}" class="input input-bordered w-full" />
                                 </div>
                             </div>
                         </div>
 
                         <div class="collapse collapse-arrow bg-base-200 border border-base-300">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-bold">Gotify</div>
+                            <input id="collapse-gotify" type="checkbox" />
+                            <label for="collapse-gotify" class="collapse-title font-bold">Gotify</label>
                             <div class="collapse-content">
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">URL</span></label>
-                                    <input type="text" name="GotifyURL" value="{{ .config.GotifyURL }}" class="input input-bordered w-full" />
+                                    <label class="label" for="GotifyURL"><span class="label-text">URL</span></label>
+                                    <input id="GotifyURL" type="text" name="GotifyURL" value="{{ .config.GotifyURL }}" class="input input-bordered w-full" />
                                 </div>
                                 <div class="form-control w-full">
-                                    <label class="label"><span class="label-text">Token</span></label>
-                                    <input type="text" name="GotifyToken" value="{{ .config.GotifyToken }}" class="input input-bordered w-full" />
+                                    <label class="label" for="GotifyToken"><span class="label-text">Token</span></label>
+                                    <input id="GotifyToken" type="text" name="GotifyToken" value="{{ .config.GotifyToken }}" class="input input-bordered w-full" />
                                 </div>
                             </div>
                         </div>

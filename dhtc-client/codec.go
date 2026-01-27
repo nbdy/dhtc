@@ -4,10 +4,11 @@ package dhtc_client
 import (
 	"encoding/binary"
 	"fmt"
+	"net"
+
 	"github.com/anacrolix/missinggo/v2/iter"
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/willf/bloom"
-	"net"
 )
 
 // Message represents a KRPC message.
@@ -69,7 +70,7 @@ type ResponseValues struct {
 	// Token for future announce_peer.
 	Token []byte `bencode:"token,omitempty"`
 	// Values is a list of torrent peers.
-	Values []CompactPeer `bencode:"values,omitempty"`
+	Values CompactPeers `bencode:"values,omitempty"`
 
 	// Interval is the subset refresh interval in seconds (BEP 51).
 	Interval int `bencode:"interval,omitempty"`
@@ -110,30 +111,41 @@ type CompactNodeInfo struct {
 // CompactNodeInfos is a slice of CompactNodeInfo.
 type CompactNodeInfos []CompactNodeInfo
 
-// UnmarshalBencode This allows bencode.Unmarshal to do better than a string or []byte.
-func (cps *CompactPeers) UnmarshalBencode(b []byte) (err error) {
+// UnmarshalBencode unmarshals the compact peers from bencode.
+// It supports both a list of strings and a single string.
+func (cps *CompactPeers) UnmarshalBencode(b []byte) error {
+	var list [][]byte
+	if err := bencode.Unmarshal(b, &list); err == nil {
+		*cps = make(CompactPeers, 0, len(list))
+		for _, s := range list {
+			var cp CompactPeer
+			if err := cp.UnmarshalBinary(s); err != nil {
+				return err
+			}
+			*cps = append(*cps, cp)
+		}
+		return nil
+	}
 	var bb []byte
-	err = bencode.Unmarshal(b, &bb)
-	if err != nil {
-		return
+	if err := bencode.Unmarshal(b, &bb); err != nil {
+		return err
 	}
+	var err error
 	*cps, err = UnmarshalCompactPeers(bb)
-	return
+	return err
 }
 
-func (cps CompactPeers) MarshalBinary() (ret []byte, err error) {
-	for _, cp := range cps {
-		ret = append(ret, cp.MarshalBinary()...)
+// MarshalBencode marshals the compact peers to bencode.
+func (cps *CompactPeers) MarshalBencode() ([]byte, error) {
+	list := make([][]byte, 0, len(*cps))
+	for _, cp := range *cps {
+		list = append(list, cp.MarshalBinary())
 	}
-	return
+	return bencode.Marshal(list)
 }
 
-func (cp CompactPeer) MarshalBencode() (ret []byte, err error) {
-	b := cp.MarshalBinary()
-	return bencode.Marshal(b)
-}
-
-func (cp CompactPeer) MarshalBinary() []byte {
+// MarshalBinary marshals the compact peer to binary.
+func (cp *CompactPeer) MarshalBinary() []byte {
 	ip := cp.IP.To4()
 	if ip == nil {
 		ip = cp.IP.To16()
@@ -147,6 +159,7 @@ func (cp CompactPeer) MarshalBinary() []byte {
 	return ret
 }
 
+// UnmarshalBinary unmarshals the compact peer from binary.
 func (cp *CompactPeer) UnmarshalBinary(b []byte) error {
 	switch len(b) {
 	case 18:
@@ -162,16 +175,8 @@ func (cp *CompactPeer) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-func (cp *CompactPeer) UnmarshalBencode(b []byte) (err error) {
-	var _b []byte
-	err = bencode.Unmarshal(b, &_b)
-	if err != nil {
-		return
-	}
-	return cp.UnmarshalBinary(_b)
-}
-
-func UnmarshalCompactPeers(b []byte) (ret []CompactPeer, err error) {
+// UnmarshalCompactPeers unmarshals the compact peers from a byte slice.
+func UnmarshalCompactPeers(b []byte) (ret CompactPeers, err error) {
 	if len(b) == 0 {
 		return nil, nil
 	}
@@ -186,7 +191,7 @@ func UnmarshalCompactPeers(b []byte) (ret []CompactPeer, err error) {
 	}
 
 	num := len(b) / peerSize
-	ret = make([]CompactPeer, num)
+	ret = make(CompactPeers, num)
 	for i := range iter.N(num) {
 		off := i * peerSize
 		err = ret[i].UnmarshalBinary(b[off : off+peerSize])
@@ -197,7 +202,7 @@ func UnmarshalCompactPeers(b []byte) (ret []CompactPeer, err error) {
 	return
 }
 
-// UnmarshalBencode This allows bencode.Unmarshal to do better than a string or []byte.
+// UnmarshalBencode unmarshals the compact node infos from bencode.
 func (cnis *CompactNodeInfos) UnmarshalBencode(b []byte) (err error) {
 	var bb []byte
 	err = bencode.Unmarshal(b, &bb)
@@ -208,6 +213,7 @@ func (cnis *CompactNodeInfos) UnmarshalBencode(b []byte) (err error) {
 	return
 }
 
+// UnmarshalCompactNodeInfos unmarshals the compact node infos from a byte slice.
 func UnmarshalCompactNodeInfos(b []byte) (ret []CompactNodeInfo, err error) {
 	if len(b) == 0 {
 		return nil, nil
@@ -235,6 +241,7 @@ func UnmarshalCompactNodeInfos(b []byte) (ret []CompactNodeInfo, err error) {
 	return
 }
 
+// UnmarshalBinary unmarshals the compact node info from binary.
 func (cni *CompactNodeInfo) UnmarshalBinary(b []byte) error {
 	if len(b) != 26 && len(b) != 38 {
 		return fmt.Errorf("invalid compact node info length: %d", len(b))
@@ -260,21 +267,23 @@ func (cni *CompactNodeInfo) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-func (cnis CompactNodeInfos) MarshalBencode() ([]byte, error) {
+// MarshalBencode marshals the compact node infos to bencode.
+func (cnis *CompactNodeInfos) MarshalBencode() ([]byte, error) {
 	var ret []byte
 
-	if len(cnis) == 0 {
+	if len(*cnis) == 0 {
 		return []byte("0:"), nil
 	}
 
-	for _, cni := range cnis {
+	for _, cni := range *cnis {
 		ret = append(ret, cni.MarshalBinary()...)
 	}
 
 	return bencode.Marshal(ret)
 }
 
-func (cni CompactNodeInfo) MarshalBinary() []byte {
+// MarshalBinary marshals the compact node info to binary.
+func (cni *CompactNodeInfo) MarshalBinary() []byte {
 	ret := make([]byte, 20)
 	copy(ret, cni.ID)
 
@@ -291,10 +300,12 @@ func (cni CompactNodeInfo) MarshalBinary() []byte {
 	return ret
 }
 
-func (e Error) MarshalBencode() ([]byte, error) {
+// MarshalBencode marshals the error to bencode.
+func (e *Error) MarshalBencode() ([]byte, error) {
 	return bencode.Marshal([]interface{}{e.Code, e.Message})
 }
 
+// UnmarshalBencode unmarshals the error from bencode.
 func (e *Error) UnmarshalBencode(b []byte) (err error) {
 	var i interface{}
 	err = bencode.Unmarshal(b, &i)
