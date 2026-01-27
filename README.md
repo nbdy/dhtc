@@ -42,20 +42,20 @@
 
 ### 📸 Screenshots
 
-| Dashboard | Search |
-|-----------|--------|
+| Dashboard                               | Search                            |
+|-----------------------------------------|-----------------------------------|
 | ![Dashboard](screenshots/dashboard.png) | ![Search](screenshots/search.png) |
 
-| Discover | Watches |
-|----------|---------|
+| Discover                              | Watches                             |
+|---------------------------------------|-------------------------------------|
 | ![Discover](screenshots/discover.png) | ![Watches](screenshots/watches.png) |
 
-| Blacklist | Settings |
-|-----------|----------|
+| Blacklist                               | Settings                              |
+|-----------------------------------------|---------------------------------------|
 | ![Blacklist](screenshots/blacklist.png) | ![Settings](screenshots/settings.png) |
 
-| Trawl |
-|-------|
+| Trawl                           |
+|---------------------------------|
 | ![Trawl](screenshots/trawl.png) |
 
 ---

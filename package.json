@@ -1,7 +1,7 @@
 {
   "name": "dhtc",
   "version": "1.0.0",
-  "description": "[![](http://github-actions.40ants.com/nbdy/dhtc/matrix.svg?only=build)](https://github.com/nbdy/dhtc)",
+  "description": "[![](https://github-actions.40ants.com/nbdy/dhtc/matrix.svg?only=build)](https://github.com/nbdy/dhtc)",
   "main": "index.js",
   "scripts": {
     "build:css": "tailwindcss -i ./ui/static/css/input.css -o ./ui/static/css/style.css --minify",
