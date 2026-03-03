@@ -70,7 +70,12 @@ docker compose up -d
 Your search engine will be waiting for you at [http://localhost:4200](http://localhost:4200).
 
 #### Run Locally
-Ensure you have [Go 1.24+](https://go.dev/dl/) installed, then:
-```shell
-go run cmd/dhtc/main.go
-```
+1. **Build CSS**: Ensure you have [Node.js 20+](https://nodejs.org/) installed, then:
+   ```shell
+   npm install
+   npm run build:css
+   ```
+2. **Build and Run Go**: Ensure you have [Go 1.25+](https://go.dev/dl/) installed, then:
+   ```shell
+   go run cmd/dhtc/main.go
+   ```
