@@ -22,7 +22,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'
+          go-version: '1.25'
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -34,9 +34,6 @@ jobs:
 
       - name: Build CSS
         run: npm run build:css
-
-      - name: Go get
-        run: go get dhtc
 
       - name: Build Linux
         if: runner.os == 'Linux'
