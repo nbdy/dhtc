@@ -16,12 +16,22 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var (
+	defaultBootstrapNodes = []string{
+		"router.bittorrent.com:6881", "router.utorrent.com:6881",
+		"dht.transmissionbt.com:6881", "dht.libtorrent.org:25401",
+	}
+)
+
 func ReadFileLines(filePath string) []string {
 	var rVal []string
 
+	if filePath == "" {
+		return rVal
+	}
+
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Error().Err(err)
 		return rVal
 	}
 	defer file.Close()
@@ -98,10 +108,7 @@ func main() {
 	if len(bootstrapNodes) == 0 {
 		log.Warn().Msg("No bootstrap nodes found in '" + cfg.BootstrapNodeFile + "'.")
 		log.Info().Msg("Using default bootstrap nodes.")
-		bootstrapNodes = []string{
-			"router.bittorrent.com:6881", "router.utorrent.com:6881",
-			"dht.transmissionbt.com:6881", "dht.libtorrent.org:25401",
-		}
+		bootstrapNodes = defaultBootstrapNodes
 	}
 
 	hub := ui.NewHub()
@@ -115,7 +122,7 @@ func main() {
 			go collectStats(database)
 		}
 
-		for i := 0; i < cfg.CrawlerThreads; i++ {
+		for range cfg.CrawlerThreads {
 			go crawl(cfg, bootstrapNodes, database, nManager, hub)
 		}
 	}
