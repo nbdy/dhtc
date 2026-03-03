@@ -21,14 +21,14 @@ type TransmissionClient struct {
 }
 
 func (c *TransmissionClient) AddMagnet(magnet string) error {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"method": "torrent-add",
-		"arguments": map[string]interface{}{
+		"arguments": map[string]any{
 			"filename": magnet,
 		},
 	}
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		err := func() error {
 			body, _ := json.Marshal(payload)
 			req, err := http.NewRequest("POST", c.URL, bytes.NewBuffer(body))
@@ -82,13 +82,13 @@ type Aria2Client struct {
 }
 
 func (c *Aria2Client) AddMagnet(magnet string) error {
-	var params []interface{}
+	var params []any
 	if c.Token != "" {
 		params = append(params, "token:"+c.Token)
 	}
 	params = append(params, []string{magnet})
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      "dhtc",
 		"method":  "aria2.addUri",
@@ -121,7 +121,7 @@ func (c *DelugeClient) AddMagnet(magnet string) error {
 	}
 
 	// 1. Login
-	loginPayload := map[string]interface{}{
+	loginPayload := map[string]any{
 		"id":     1,
 		"method": "auth.login",
 		"params": []string{c.Pass},
@@ -145,10 +145,10 @@ func (c *DelugeClient) AddMagnet(magnet string) error {
 	}
 
 	// 2. Add magnet
-	addPayload := map[string]interface{}{
+	addPayload := map[string]any{
 		"id":     2,
 		"method": "core.add_torrent_magnet",
-		"params": []interface{}{magnet, map[string]interface{}{}},
+		"params": []any{magnet, map[string]any{}},
 	}
 	addBody, _ := json.Marshal(addPayload)
 	req, err := http.NewRequest("POST", c.URL, bytes.NewBuffer(addBody))

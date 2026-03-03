@@ -59,16 +59,18 @@ func (r *CloverRepository) Search(key string, searchType string, searchInput str
 		if !Matches(doc, key, searchType, searchInput) {
 			return false
 		}
-		if filters.MinSize > 0 && doc.Get("TotalSize").(uint64) < filters.MinSize {
+		totalSize, _ := doc.Get("TotalSize").(uint64)
+		if filters.MinSize > 0 && totalSize < filters.MinSize {
 			return false
 		}
-		if filters.MaxSize > 0 && doc.Get("TotalSize").(uint64) > filters.MaxSize {
+		if filters.MaxSize > 0 && totalSize > filters.MaxSize {
 			return false
 		}
-		if filters.StartDate > 0 && doc.Get("DiscoveredOn").(int64) < filters.StartDate {
+		discoveredOn, _ := doc.Get("DiscoveredOn").(int64)
+		if filters.StartDate > 0 && discoveredOn < filters.StartDate {
 			return false
 		}
-		if filters.EndDate > 0 && doc.Get("DiscoveredOn").(int64) > filters.EndDate {
+		if filters.EndDate > 0 && discoveredOn > filters.EndDate {
 			return false
 		}
 		return true
@@ -90,7 +92,7 @@ func (r *CloverRepository) GetNRandomEntries(N int) []MetaData {
 
 	all, _ := r.db.FindAll(query.NewQuery(TorrentTable))
 	rVal := make([]*document.Document, N)
-	for i := 0; i < N; i++ {
+	for i := range N {
 		rVal[i] = all[rand.Intn(count)] //nolint:gosec // weak random number generator is fine for this use case
 	}
 	return Documents2MetaData(rVal)
@@ -127,11 +129,14 @@ func (r *CloverRepository) GetWatchEntries() []WatchEntry {
 	all, _ := r.db.FindAll(query.NewQuery(WatchTable))
 	rVal := make([]WatchEntry, len(all))
 	for i, value := range all {
+		k, _ := value.Get("Key").(string)
+		mt, _ := value.Get("MatchType").(string)
+		c, _ := value.Get("Content").(string)
 		rVal[i] = WatchEntry{
-			value.ObjectId(),
-			value.Get("Key").(string),
-			value.Get("MatchType").(string),
-			value.Get("Content").(string),
+			Id:        value.ObjectId(),
+			Key:       k,
+			MatchType: mt,
+			Content:   c,
 		}
 	}
 	return rVal
@@ -158,10 +163,12 @@ func (r *CloverRepository) GetBlacklistEntries() []BlacklistEntry {
 	all, _ := r.db.FindAll(query.NewQuery(BlacklistTable))
 	rVal := make([]BlacklistEntry, len(all))
 	for i, value := range all {
+		f, _ := value.Get("Filter").(string)
+		t, _ := value.Get("Type").(string)
 		rVal[i] = BlacklistEntry{
-			value.ObjectId(),
-			value.Get("Filter").(string),
-			GetBlacklistTypeFromStrInt(value.Get("Type").(string)),
+			Id:     value.ObjectId(),
+			Filter: f,
+			Type:   GetBlacklistTypeFromStrInt(t),
 		}
 	}
 	return rVal
@@ -195,13 +202,14 @@ func (r *CloverRepository) DeleteBlacklistItem(itemId string) error {
 
 func (r *CloverRepository) IsBlacklisted(md dhtcclient.Metadata) bool {
 	all, _ := r.db.FindAll(query.NewQuery(BlacklistTable).MatchFunc(func(doc *document.Document) bool {
-		filterStr := doc.Get("Filter").(string)
+		filterStr, _ := doc.Get("Filter").(string)
 		filter, err := regexp.Compile(filterStr)
 		if err != nil {
 			return false
 		}
 
-		switch doc.Get("Type").(string) {
+		t, _ := doc.Get("Type").(string)
+		switch t {
 		case "0":
 			return filter.MatchString(md.Name)
 		case "1":
@@ -220,7 +228,8 @@ func (r *CloverRepository) GetAllInfoHashes() ([]string, error) {
 	}
 	res := make([]string, len(all))
 	for i, d := range all {
-		res[i] = d.Get("InfoHash").(string)
+		ih, _ := d.Get("InfoHash").(string)
+		res[i] = ih
 	}
 	return res, nil
 }
@@ -239,13 +248,13 @@ func (r *CloverRepository) GetStatsByInterval(interval string, limit int) ([]Sta
 	bucketMap := make(map[int64]int64)
 	seconds := int64(duration.Seconds())
 	for _, doc := range docs {
-		discoveredOn := doc.Get("DiscoveredOn").(int64)
+		discoveredOn, _ := doc.Get("DiscoveredOn").(int64)
 		bucket := (discoveredOn / seconds) * seconds
 		bucketMap[bucket]++
 	}
 
 	res := make([]Stats, limit)
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		ts := now.Add(-time.Duration(i) * duration)
 		res[i] = Stats{
 			Timestamp:    ts,
@@ -276,7 +285,7 @@ func (r *CloverRepository) GetCategoryDistribution() (map[string]int64, error) {
 			switch v := doc.Get("Categories").(type) {
 			case []string:
 				categories = v
-			case []interface{}:
+			case []any:
 				for _, item := range v {
 					if s, ok := item.(string); ok {
 						categories = append(categories, s)
@@ -284,7 +293,8 @@ func (r *CloverRepository) GetCategoryDistribution() (map[string]int64, error) {
 				}
 			}
 		} else if doc.Has("Category") {
-			categories = []string{doc.Get("Category").(string)}
+			cat, _ := doc.Get("Category").(string)
+			categories = []string{cat}
 		}
 
 		if len(categories) == 0 {

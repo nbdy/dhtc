@@ -232,7 +232,7 @@ func (c *Client) connect(deadline time.Time) error {
 	if err != nil {
 		return errors.Wrap(err, "dial")
 	}
-	c.conn = x.(*net.TCPConn)
+	c.conn, _ = x.(*net.TCPConn)
 
 	// > If sec == 0, operating system discards any unsent or unacknowledged data [after Close()
 	// > has been called].

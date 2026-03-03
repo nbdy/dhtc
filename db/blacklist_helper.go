@@ -6,7 +6,7 @@ import (
 )
 
 func IsFileBlacklisted(md dhtcclient.Metadata, filter *regexp.Regexp) bool {
-	for i := 0; i < len(md.Files); i++ {
+	for i := range len(md.Files) {
 		if filter.MatchString(md.Files[i].Path) {
 			return true
 		}

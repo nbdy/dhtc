@@ -32,6 +32,6 @@ type MetaData struct {
 	InfoHash     string
 	DiscoveredOn string
 	TotalSize    uint64
-	Files        []interface{}
+	Files        []any
 	Categories   []string
 }

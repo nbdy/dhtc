@@ -350,7 +350,7 @@ func (r *GormRepository) IsBlacklisted(md dhtcclient.Metadata) bool {
 func (r *GormRepository) toMetaDataSlice(torrents []GormTorrent) []MetaData {
 	res := make([]MetaData, len(torrents))
 	for i, t := range torrents {
-		var files []interface{}
+		var files []any
 		json.Unmarshal([]byte(t.Files), &files)
 		res[i] = MetaData{
 			Name:         t.Name,
@@ -404,7 +404,7 @@ func (r *GormRepository) GetStatsByInterval(interval string, limit int) ([]Stats
 	}
 
 	res := make([]Stats, limit)
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		ts := now.Add(-time.Duration(i) * duration)
 		res[i] = Stats{
 			Timestamp:    ts,

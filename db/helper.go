@@ -14,7 +14,7 @@ func Document2MetaData(value *document.Document) MetaData {
 		switch v := value.Get("Categories").(type) {
 		case []string:
 			categories = v
-		case []interface{}:
+		case []any:
 			for _, item := range v {
 				if s, ok := item.(string); ok {
 					categories = append(categories, s)
@@ -25,16 +25,23 @@ func Document2MetaData(value *document.Document) MetaData {
 		}
 	} else if value.Has("Category") {
 		// Migration path from old "Category" field
-		categories = []string{value.Get("Category").(string)}
+		cat, _ := value.Get("Category").(string)
+		categories = []string{cat}
 	}
 
+	name, _ := value.Get("Name").(string)
+	infoHash, _ := value.Get("InfoHash").(string)
+	discoveredOn, _ := value.Get("DiscoveredOn").(int64)
+	totalSize, _ := value.Get("TotalSize").(uint64)
+	files, _ := value.Get("Files").([]any)
+
 	return MetaData{
-		value.Get("Name").(string),
-		value.Get("InfoHash").(string),
-		time.Unix(value.Get("DiscoveredOn").(int64), 0).Format(time.RFC822),
-		value.Get("TotalSize").(uint64),
-		value.Get("Files").([]interface{}),
-		categories,
+		Name:         name,
+		InfoHash:     infoHash,
+		DiscoveredOn: time.Unix(discoveredOn, 0).Format(time.RFC822),
+		TotalSize:    totalSize,
+		Files:        files,
+		Categories:   categories,
 	}
 }
 
@@ -63,11 +70,19 @@ func MatchString(searchType string, x string, y string) bool {
 	return rVal
 }
 
-func HasMatchingFile(fileList []interface{}, searchType string, searchInput string) bool {
+func HasMatchingFile(fileList []any, searchType, searchInput string) bool {
 	for _, item := range fileList {
-		for key, value := range item.(map[string]interface{}) {
+		m, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		for key, value := range m {
 			if key == "Path" {
-				if MatchString(searchType, value.(string), searchInput) {
+				val, ok := value.(string)
+				if !ok {
+					continue
+				}
+				if MatchString(searchType, val, searchInput) {
 					return true
 				}
 			}
@@ -98,11 +113,16 @@ func Matches(doc *document.Document, key string, searchType string, searchInput 
 		value := doc.Get(key)
 
 		if key == "Files" {
-			rVal = HasMatchingFile(value.([]interface{}), searchType, searchInput)
+			fList, ok := value.([]any)
+			if ok {
+				rVal = HasMatchingFile(fList, searchType, searchInput)
+			}
 		} else if key == "DiscoveredOn" {
-			rVal = FoundOnDate(time.Unix(value.(int64), 0), searchInput)
+			vInt, _ := value.(int64)
+			rVal = FoundOnDate(time.Unix(vInt, 0), searchInput)
 		} else {
-			rVal = MatchString(searchType, value.(string), searchInput)
+			vStr, _ := value.(string)
+			rVal = MatchString(searchType, vStr, searchInput)
 		}
 	}
 	return rVal

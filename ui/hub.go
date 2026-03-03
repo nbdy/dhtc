@@ -85,7 +85,7 @@ func (h *Hub) BroadcastMetadata(md dhtcclient.Metadata) {
 	h.Broadcast(msg)
 }
 
-func (h *Hub) Broadcast(v interface{}) {
+func (h *Hub) Broadcast(v any) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		log.Error().Err(err).Msg("could not marshal broadcast message")

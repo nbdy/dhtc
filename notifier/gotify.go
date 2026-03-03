@@ -17,7 +17,7 @@ func (n *GotifyNotifier) Notify(message string) error {
 		return nil
 	}
 	url := fmt.Sprintf("%s/message?token=%s", n.URL, n.Token)
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"message":  message,
 		"priority": 5,
 		"title":    "dhtc",

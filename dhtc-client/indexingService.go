@@ -107,7 +107,7 @@ func (is *IndexingService) index(nodes []string) {
 				if back == nil {
 					break
 				}
-				id := back.Value.(string)
+				id, _ := back.Value.(string)
 				seen := is.lastSeen[id]
 				if time.Since(seen) > 5*time.Minute {
 					is.lruList.Remove(back)
@@ -188,7 +188,7 @@ func (is *IndexingService) addNode(id []byte, addr *net.UDPAddr) {
 	if uint(len(is.routingTable)) >= is.maxNeighbors {
 		back := is.lruList.Back()
 		if back != nil {
-			oldestID := back.Value.(string)
+			oldestID, _ := back.Value.(string)
 			is.lruList.Remove(back)
 			delete(is.lruElements, oldestID)
 			delete(is.routingTable, oldestID)
@@ -260,7 +260,7 @@ func (is *IndexingService) onSampleInfohashesResponse(msg *Message, addr *net.UD
 	is.addNode(msg.R.ID, addr)
 
 	// request samples
-	for i := 0; i < len(msg.R.Samples)/20; i++ {
+	for i := range len(msg.R.Samples) / 20 {
 		infoHash := make([]byte, 20)
 		copy(infoHash, msg.R.Samples[i*20:(i+1)*20])
 		is.requestPeers(infoHash, addr)

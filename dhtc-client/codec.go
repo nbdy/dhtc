@@ -302,18 +302,18 @@ func (cni *CompactNodeInfo) MarshalBinary() []byte {
 
 // MarshalBencode marshals the error to bencode.
 func (e *Error) MarshalBencode() ([]byte, error) {
-	return bencode.Marshal([]interface{}{e.Code, e.Message})
+	return bencode.Marshal([]any{e.Code, e.Message})
 }
 
 // UnmarshalBencode unmarshals the error from bencode.
 func (e *Error) UnmarshalBencode(b []byte) (err error) {
-	var i interface{}
+	var i any
 	err = bencode.Unmarshal(b, &i)
 	if err != nil {
 		return err
 	}
 
-	l, ok := i.([]interface{})
+	l, ok := i.([]any)
 	if !ok {
 		return fmt.Errorf("invalid error type: %T", i)
 	}
