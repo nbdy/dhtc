@@ -1,107 +1,162 @@
-{{ define "watches" }}
-{{ template "base" .}}
-{{ end }}
-
-{{define "body"}}
+{{ define "watches" }} {{ template "base" .}} {{ end }} {{define "body"}}
 <div class="container mx-auto p-4 md:p-8">
-    {{if .op}}
-        <div class="alert {{if .opOk}}alert-success{{else}}alert-error{{end}} shadow-lg mb-8">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>Watch {{if eq .op "add"}}added{{else}}deleted{{end}} {{if .opOk}}successfully{{else}}failed{{end}}.</span>
-        </div>
-    {{end}}
+  {{if .op}}
+  <div
+    class="alert {{if .opOk}}alert-success{{else}}alert-error{{end}} shadow-lg mb-8"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="stroke-current flex-shrink-0 h-6 w-6"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+    <span
+      >Watch {{if eq .op "add"}}added{{else}}deleted{{end}} {{if
+      .opOk}}successfully{{else}}failed{{end}}.</span
+    >
+  </div>
+  {{end}}
 
-    <div class="mb-8">
-        <h1 class="text-4xl font-extrabold tracking-tight">Watches</h1>
-        <p class="text-base-content/60">Manage automatic notifications for matching torrents</p>
-    </div>
+  <div class="mb-8">
+    <h1 class="text-4xl font-extrabold tracking-tight">Watches</h1>
+    <p class="text-base-content/60">
+      Manage automatic notifications for matching torrents
+    </p>
+  </div>
 
-    <div class="card bg-base-100 shadow-xl border border-base-300 mb-8">
-        <div class="card-body p-4 sm:p-6">
-            <h2 class="card-title text-lg mb-4">Add New Watch</h2>
-            <form action="/watches" method="post">
-                <input type="hidden" name="op" value="add">
-                <div class="flex flex-col lg:flex-row gap-4 items-end">
-                    <div class="form-control w-full lg:w-48">
-                        <label class="label pt-0" for="watch-key">
-                            <span class="label-text font-semibold text-xs">Field</span>
-                        </label>
-                        <select id="watch-key" class="select select-bordered select-sm w-full pr-10" name="key">
-                            <option value="Name" selected>Name</option>
-                            <option value="InfoHash">Info hash</option>
-                            <option value="Files">File name</option>
-                            <option value="DiscoveredOn">Date</option>
-                        </select>
-                    </div>
+  <div class="card bg-base-100 shadow-xl border border-base-300 mb-8">
+    <div class="card-body p-4 sm:p-6">
+      <h2 class="card-title text-lg mb-4">Add New Watch</h2>
+      <form action="/watches" method="post">
+        <input type="hidden" name="op" value="add" />
+        <div class="flex flex-col lg:flex-row gap-4 items-end">
+          <div class="form-control w-full lg:w-48">
+            <label class="label pt-0" for="watch-key">
+              <span class="label-text font-semibold text-xs">Field</span>
+            </label>
+            <select
+              id="watch-key"
+              class="select select-bordered select-sm w-full pr-10"
+              name="key"
+            >
+              <option value="Name" selected>Name</option>
+              <option value="InfoHash">Info hash</option>
+              <option value="Files">File name</option>
+              <option value="DiscoveredOn">Date</option>
+            </select>
+          </div>
 
-                    <div class="form-control w-full lg:w-48">
-                        <label class="label pt-0" for="watch-match-type">
-                            <span class="label-text font-semibold text-xs">Match Type</span>
-                        </label>
-                        <select id="watch-match-type" class="select select-bordered select-sm w-full pr-10" name="match-type">
-                            <option value="contains" selected>contains</option>
-                            <option value="equals">equals</option>
-                            <option value="startswith">starts with</option>
-                            <option value="endswith">ends with</option>
-                        </select>
-                    </div>
+          <div class="form-control w-full lg:w-48">
+            <label class="label pt-0" for="watch-match-type">
+              <span class="label-text font-semibold text-xs">Match Type</span>
+            </label>
+            <select
+              id="watch-match-type"
+              class="select select-bordered select-sm w-full pr-10"
+              name="match-type"
+            >
+              <option value="contains" selected>contains</option>
+              <option value="equals">equals</option>
+              <option value="startswith">starts with</option>
+              <option value="endswith">ends with</option>
+            </select>
+          </div>
 
-                    <div class="form-control flex-grow w-full">
-                        <label class="label pt-0" for="watch-content">
-                            <span class="label-text font-semibold text-xs">Content</span>
-                        </label>
-                        <div class="join w-full">
-                            <input id="watch-content" type="text" placeholder="Content to watch for..." class="input input-bordered input-sm join-item w-full" name="search-input" required />
-                            <button class="btn btn-primary btn-sm join-item px-6" type="submit">Add Watch</button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{if .results}}
-    <div class="card bg-base-100 shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
-                <thead>
-                <tr class="bg-base-300">
-                    <th class="w-16">#</th>
-                    <th>Key</th>
-                    <th>Match type</th>
-                    <th>Content</th>
-                    <th class="text-right">Action</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{range $index, $item := .results}}
-                <tr class="hover">
-                    <td class="font-mono text-xs opacity-50">{{ $index }}</td>
-                    <td><div class="badge badge-ghost badge-sm font-semibold uppercase">{{ $item.Key }}</div></td>
-                    <td><div class="badge badge-outline badge-sm">{{ $item.MatchType }}</div></td>
-                    <td class="whitespace-normal break-all font-medium">{{ $item.Content }}</td>
-                    <td class="text-right">
-                        <form id="{{ $index }}-delete" action="/watches" method="post" class="inline">
-                            <input type="hidden" name="op" value="delete">
-                            <input type="hidden" name="id" value="{{ $item.Id }}">
-                            <button class="btn btn-error btn-ghost btn-xs" type="submit">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-                {{end}}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {{else}}
-    <div class="hero bg-base-100 rounded-xl shadow-xl p-10 mt-8">
-        <div class="hero-content text-center">
-            <div class="max-w-md">
-                <h1 class="text-2xl font-bold">No watches active</h1>
-                <p class="py-6 text-base-content/60">Define watches to get notified when torrents matching your criteria are discovered.</p>
+          <div class="form-control flex-grow w-full">
+            <label class="label pt-0" for="watch-content">
+              <span class="label-text font-semibold text-xs">Content</span>
+            </label>
+            <div class="join w-full">
+              <input
+                id="watch-content"
+                type="text"
+                placeholder="Content to watch for..."
+                class="input input-bordered input-sm join-item w-full"
+                name="search-input"
+                required
+              />
+              <button
+                class="btn btn-primary btn-sm join-item px-6"
+                type="submit"
+              >
+                Add Watch
+              </button>
             </div>
+          </div>
         </div>
+      </form>
     </div>
-    {{end}}
+  </div>
+
+  {{if .results}}
+  <div class="card bg-base-100 shadow-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="table table-zebra w-full">
+        <thead>
+          <tr class="bg-base-300">
+            <th class="w-16">#</th>
+            <th>Key</th>
+            <th>Match type</th>
+            <th>Content</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range $index, $item := .results}}
+          <tr class="hover">
+            <td class="font-mono text-xs opacity-50">{{ $index }}</td>
+            <td>
+              <div class="badge badge-ghost badge-sm font-semibold uppercase">
+                {{ $item.Key }}
+              </div>
+            </td>
+            <td>
+              <div class="badge badge-outline badge-sm">
+                {{ $item.MatchType }}
+              </div>
+            </td>
+            <td class="whitespace-normal break-all font-medium">
+              {{ $item.Content }}
+            </td>
+            <td class="text-right">
+              <form
+                id="{{ $index }}-delete"
+                action="/watches"
+                method="post"
+                class="inline"
+              >
+                <input type="hidden" name="op" value="delete" />
+                <input type="hidden" name="id" value="{{ $item.Id }}" />
+                <button class="btn btn-error btn-ghost btn-xs" type="submit">
+                  Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{else}}
+  <div class="hero bg-base-100 rounded-xl shadow-xl p-10 mt-8">
+    <div class="hero-content text-center">
+      <div class="max-w-md">
+        <h1 class="text-2xl font-bold">No watches active</h1>
+        <p class="py-6 text-base-content/60">
+          Define watches to get notified when torrents matching your criteria
+          are discovered.
+        </p>
+      </div>
+    </div>
+  </div>
+  {{end}}
 </div>
 {{ end }}

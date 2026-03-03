@@ -8,4 +8,4 @@ module.exports = {
   daisyui: {
     themes: "all",
   },
-}
+};
