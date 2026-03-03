@@ -46,8 +46,7 @@ func crawl(configuration *config.Configuration, bootstrapNodes []string, databas
 		case result := <-trawlingManager.Output():
 			hash := result.InfoHash()
 
-			if !cache.InfoHashCache.Contains(string(hash)) {
-				cache.InfoHashCache.Add(string(hash))
+			if cache.InfoHashCacheAdd(string(hash)) {
 				metadataSink.Sink(result)
 			}
 

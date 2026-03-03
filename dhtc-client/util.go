@@ -33,7 +33,7 @@ func randomID() []byte {
 	prefix := []byte("-MC0008-")
 
 	var rando []byte
-	for i := 20 - len(prefix); i >= 0; i-- {
+	for i := 20 - len(prefix); i > 0; i-- {
 		rando = append(rando, randomDigit())
 	}
 

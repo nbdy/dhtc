@@ -64,15 +64,16 @@ func MatchString(searchType string, x string, y string) bool {
 }
 
 func HasMatchingFile(fileList []interface{}, searchType string, searchInput string) bool {
-	rVal := false
 	for _, item := range fileList {
 		for key, value := range item.(map[string]interface{}) {
 			if key == "Path" {
-				rVal = MatchString(searchType, value.(string), searchInput)
+				if MatchString(searchType, value.(string), searchInput) {
+					return true
+				}
 			}
 		}
 	}
-	return rVal
+	return false
 }
 
 func FoundOnDate(date time.Time, searchInput string) bool {

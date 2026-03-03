@@ -3,6 +3,7 @@ package dhtc_client
 import (
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -77,10 +78,11 @@ type Sink struct {
 	maxConcurrentDownloads int
 	downloadSem            chan struct{}
 	drain                  chan Metadata
+	drainMx                sync.Mutex
 
 	incomingInfoHashes   map[string][]net.TCPAddr
 	incomingInfoHashesMx sync.Mutex
 
-	terminated  bool
-	termination chan interface{}
+	terminated  atomic.Bool
+	termination chan any
 }

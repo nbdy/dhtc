@@ -17,13 +17,13 @@ func NewSink(deadline time.Duration, maxNLeeches int, maxConcurrentDownloads int
 	ms.downloadSem = make(chan struct{}, maxConcurrentDownloads)
 	ms.drain = make(chan Metadata, 10)
 	ms.incomingInfoHashes = make(map[string][]net.TCPAddr)
-	ms.termination = make(chan interface{})
+	ms.termination = make(chan any)
 
 	return ms
 }
 
 func (ms *Sink) Sink(res Result) {
-	if ms.terminated {
+	if ms.terminated.Load() {
 		log.Panic().Msg("Trying to Sink() an already closed Sink!")
 	}
 	ms.incomingInfoHashesMx.Lock()
@@ -70,20 +70,27 @@ func (ms *Sink) onPeers(infoHash []byte, peers []net.TCPAddr) {
 }
 
 func (ms *Sink) Drain() <-chan Metadata {
-	if ms.terminated {
+	if ms.terminated.Load() {
 		log.Panic().Msg("Trying to Drain() an already closed Sink!")
 	}
 	return ms.drain
 }
 
 func (ms *Sink) Terminate() {
-	ms.terminated = true
-	close(ms.termination)
-	close(ms.drain)
+	ms.drainMx.Lock()
+	defer ms.drainMx.Unlock()
+
+	if ms.terminated.CompareAndSwap(false, true) {
+		close(ms.termination)
+		close(ms.drain)
+	}
 }
 
 func (ms *Sink) flush(result Metadata) {
-	if ms.terminated {
+	ms.drainMx.Lock()
+	defer ms.drainMx.Unlock()
+
+	if ms.terminated.Load() {
 		return
 	}
 

@@ -3,12 +3,28 @@ package cache
 import (
 	"dhtc/db"
 	"encoding/hex"
+	"sync"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rs/zerolog/log"
 )
 
-var InfoHashCache = mapset.NewSet[string]()
+var (
+	infoHashCache   = mapset.NewSet[string]()
+	infoHashCacheMu sync.RWMutex
+)
+
+func InfoHashCacheContains(infoHash string) bool {
+	infoHashCacheMu.RLock()
+	defer infoHashCacheMu.RUnlock()
+	return infoHashCache.Contains(infoHash)
+}
+
+func InfoHashCacheAdd(infoHash string) bool {
+	infoHashCacheMu.Lock()
+	defer infoHashCacheMu.Unlock()
+	return infoHashCache.Add(infoHash)
+}
 
 func PopulateInfoHashCacheFromDatabase(database db.Repository) {
 	all, err := database.GetAllInfoHashes()
@@ -21,8 +37,11 @@ func PopulateInfoHashCacheFromDatabase(database db.Repository) {
 		if err != nil {
 			continue
 		}
-		InfoHashCache.Add(string(h))
+		InfoHashCacheAdd(string(h))
 	}
 
-	log.Debug().Msgf("info hash cache size %d elements", InfoHashCache.Cardinality())
+	infoHashCacheMu.RLock()
+	cacheSize := infoHashCache.Cardinality()
+	infoHashCacheMu.RUnlock()
+	log.Debug().Msgf("info hash cache size %d elements", cacheSize)
 }
